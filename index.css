@@ -95,7 +95,7 @@
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   --footer-height: 110px;
-  --live-footer-height: 145px; /* WAS 175px. Aggressively reduced. */
+  --live-footer-height: 145px;
 }
 
 body.light-mode {
@@ -137,7 +137,7 @@ body.light-mode {
 
 html {
   height: 100%;
-  overflow: hidden; /* Prevent global scrollbars, app is self-contained */
+  overflow: hidden;
 }
 
 body {
@@ -145,27 +145,30 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.65;
-  height: 100vh; /* Fixed viewport height */
-  overflow: hidden; /* Prevent body scrollbars */
+  height: 100vh;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
   transition: background-color var(--transition-normal), color var(--transition-normal);
   margin: 0;
-  touch-action: manipulation; /* Enhance touch responsiveness on mobile */
+  touch-action: manipulation;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100%; /* Fill body */
+  height: 100%;
   width: 100%;
   max-width: 100%;
-  overflow: hidden; /* Ensure app container doesn't scroll */
-  position: relative; /* For positioning context of focus-prompt-overlay */
+  overflow: hidden;
+  position: relative;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
 }
 
-/* iOS Install Banner */
 .ios-install-banner {
   background-color: var(--color-accent);
   color: white;
@@ -175,12 +178,14 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky; /* Or fixed if you prefer it always on top */
-  top: 0;
-  left: 0;
+  position: sticky;
+  top: 0; /* Will be effectively 0 within the safe-area padded app-container */
+  left: 0; /* Will be effectively 0 within the safe-area padded app-container */
   width: 100%;
-  z-index: 1500; /* Ensure it's above other content but below modals */
+  z-index: 1500;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  /* Adjust for safe-area if app-container didn't have padding, but it does now. */
+  /* margin-top: calc(-1 * env(safe-area-inset-top, 0px)); /* Counteract app-container's top padding if needed */
 }
 body.light-mode .ios-install-banner {
     background-color: var(--color-accent-light);
@@ -192,7 +197,7 @@ body.light-mode .ios-install-banner {
 }
 .ios-install-banner i {
   margin: 0 4px;
-  font-size: 1.1em; /* Slightly larger share icon */
+  font-size: 1.1em;
 }
 .dismiss-banner-button {
   background: none;
@@ -214,31 +219,30 @@ body.light-mode .ios-install-banner {
   flex: 1;
   display: flex;
   flex-direction: column;
-  position: relative; /* For z-index context of children and :has selector behavior */
-  overflow: hidden; /* Important: This clips its content if it would overflow */
-  transition: padding-bottom var(--transition-slow) ease-in-out; /* Smoothly adjust padding for fixed panel */
+  position: relative;
+  overflow: hidden;
+  transition: padding-bottom var(--transition-slow) ease-in-out;
 }
 
-/* When .is-live is a direct child of .main-content, add padding to .main-content */
 .main-content:has(> .recording-interface.is-live) {
   padding-bottom: var(--live-footer-height);
 }
 
 .note-area {
-  flex: 1; /* Takes available space within main-content */
-  overflow: hidden; /* For its own content scroll (note-content-wrapper) */
+  flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg);
-  padding: 24px 0 0; /* Adjusted padding */
+  padding: 24px 0 0;
   transition: background-color var(--transition-normal), filter var(--transition-normal);
-  min-height: 0; /* Allows this flex item to shrink below its content size if needed */
+  min-height: 0;
 }
 
 .note-header {
   display: flex;
-  flex-direction: column; /* Stack elements vertically */
-  gap: 12px; /* Space between elements */
+  flex-direction: column;
+  gap: 12px;
   padding: 0 40px 16px;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 12px;
@@ -273,7 +277,7 @@ body.light-mode .ios-install-banner {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    gap: 16px; /* Space between language selector and tabs */
+    gap: 16px;
 }
 
 .language-selector-container {
@@ -374,7 +378,7 @@ body.light-mode .active-tab-indicator {
 
 .custom-prompt-section {
     width: 100%;
-    margin-top: 8px; /* Space above toggle button */
+    margin-top: 8px;
 }
 
 .custom-prompt-toggle {
@@ -401,7 +405,7 @@ body.light-mode .active-tab-indicator {
     margin-top: 8px;
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    overflow: hidden; /* Ensures textarea respects border-radius */
+    overflow: hidden;
 }
 .custom-prompt-container.hidden {
     display: none;
@@ -470,12 +474,12 @@ body.light-mode #customPromptTextarea {
 
 .recording-interface {
   height: var(--footer-height);
-  width: 100%;
+  width: 100%; /* Will be constrained by app-container's safe-area padding */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px 20px; /* Default vertical padding for non-live */
+  padding: 10px 20px;
   background-color: transparent;
   border-top: 1px solid transparent;
   flex-shrink: 0;
@@ -488,9 +492,10 @@ body.light-mode #customPromptTextarea {
 
 .recording-interface.is-live {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  /* Position relative to viewport, respecting app-container's safe-area for its edges */
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: env(safe-area-inset-left, 0px);
+  right: env(safe-area-inset-right, 0px);
   height: var(--live-footer-height);
   z-index: 1000;
 
@@ -500,9 +505,12 @@ body.light-mode #customPromptTextarea {
   border-top: 1px solid var(--glass-recording-border);
   box-shadow: 0 -4px 20px var(--glass-shadow);
 
-  justify-content: flex-start; /* Elements will stack from the top */
-  padding-top: 4px;    /* WAS 5px */
-  padding-bottom: 4px; /* WAS 5px. Base for safe area calc. */
+  justify-content: flex-start;
+  /* Internal padding now also considers safe areas for its content */
+  padding-top: 4px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); /* Content safe from bottom */
+  padding-left: calc(20px + env(safe-area-inset-left, 0px));   /* Content safe from left */
+  padding-right: calc(20px + env(safe-area-inset-right, 0px));  /* Content safe from right */
 }
 
 .status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); }
@@ -529,9 +537,9 @@ body.light-mode #customPromptTextarea {
 }
 
 .live-recording-title {
-  font-size: 12px;    /* WAS 14px */
+  font-size: 12px;
   color: var(--color-text);
-  margin-bottom: 2px; /* WAS 4px */
+  margin-bottom: 2px;
   text-align: center;
   font-weight: 500;
   font-family: var(--font-primary);
@@ -540,17 +548,17 @@ body.light-mode #customPromptTextarea {
 #liveWaveformCanvas {
   width: 100%;
   max-width: 320px;
-  height: 24px;       /* WAS 32px */
-  margin-bottom: 3px; /* WAS 5px */
+  height: 24px;
+  margin-bottom: 3px;
   border-radius: 4px;
 }
 
 .live-recording-timer {
   font-family: var(--font-mono);
-  font-size: clamp(16px, 4.2vw, 22px); /* WAS clamp(20px, 4.8vw, 28px) */
+  font-size: clamp(16px, 4.2vw, 22px);
   font-weight: 400;
   color: var(--color-text);
-  margin-bottom: 3px; /* WAS 5px */
+  margin-bottom: 3px;
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -561,7 +569,7 @@ body.light-mode #customPromptTextarea {
   justify-content: center;
   gap: 12px;
   position: relative;
-  margin-bottom: 2px; /* WAS 5px */
+  margin-bottom: 2px;
 }
 
 .action-button {
@@ -643,13 +651,12 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 
 .recording-interface.is-live .app-attribution {
-  font-size: 8px;      /* WAS 9px (global reduction) */
-  padding-top: 1px;    /* WAS 2px */
-  padding-bottom: 2px; /* Existing padding-bottom for this element */
+  font-size: 8px;
+  padding-top: 1px;
+  padding-bottom: 2px;
 }
 
 
-/* Modal Styles */
 .modal {
   position: fixed;
   top: 0;
@@ -666,6 +673,11 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+  /* Safe area for modal itself, ensuring it doesn't underlap system UI when full screen */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
 }
 .modal:not(.hidden) {
   opacity: 1;
@@ -677,9 +689,9 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   padding: 24px;
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
-  width: 90%;
+  width: 90%; /* Relative to safe-area padded modal parent */
   max-width: 700px;
-  max-height: 85vh;
+  max-height: 85vh; /* Relative to safe-area padded modal parent */
   display: flex;
   flex-direction: column;
   transform: scale(0.95);
@@ -833,7 +845,6 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 
 
-/* Settings Modal Specific Styles */
 .settings-modal-body {
     display: flex;
     flex-direction: column;
@@ -961,7 +972,6 @@ body.light-mode .action-button-primary {
     text-decoration: underline;
 }
 
-/* Install App Section in Settings */
 .install-app-section p {
     font-size: 14px;
     color: var(--color-text-secondary);
@@ -999,7 +1009,6 @@ body:not(.light-mode) {
 }
 
 
-/* Focus Mode Styles */
 .app-container.app-focus-mode > .main-content > .note-area {
   filter: blur(4px);
   pointer-events: none;
@@ -1020,10 +1029,10 @@ body:not(.light-mode) {
 }
 
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton {
-  filter: none !important; 
-  pointer-events: auto !important; 
-  z-index: 1001; 
-  transform: scale(1.1); 
+  filter: none !important;
+  pointer-events: auto !important;
+  z-index: 1001;
+  transform: scale(1.1);
 }
 
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton.settings-needs-glow {
@@ -1033,10 +1042,11 @@ body:not(.light-mode) {
 
 .focus-prompt-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: var(--footer-height);
+  /* Adjusted to respect safe areas */
+  top: env(safe-area-inset-top, 0px);
+  left: env(safe-area-inset-left, 0px);
+  right: env(safe-area-inset-right, 0px);
+  bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1045,14 +1055,14 @@ body:not(.light-mode) {
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out;
-  padding: 20px;
+  padding: 20px; /* Internal padding for the content from the safe area edges */
 }
 
 .app-container.app-focus-mode .focus-prompt-overlay {
   opacity: 1;
 }
 .app-container.app-is-live-recording.app-focus-mode .focus-prompt-overlay {
-    bottom: var(--live-footer-height);
+  bottom: calc(var(--live-footer-height) + env(safe-area-inset-bottom, 0px));
 }
 
 .focus-prompt-text {
@@ -1083,14 +1093,15 @@ body:not(.light-mode) {
   .tab-navigation { width: 100%; }
   .tab-button { flex-grow: 1; text-align: center; }
   .note-content-wrapper { padding: 0 20px 20px; }
-  
-  .recording-interface.is-live { 
-    padding-left: 15px; 
-    padding-right: 15px; 
+
+  .recording-interface.is-live {
+    padding-left: calc(15px + env(safe-area-inset-left, 0px));
+    padding-right: calc(15px + env(safe-area-inset-right, 0px));
+    /* padding-bottom will inherit from the general .is-live rule */
   }
 
-  #liveWaveformCanvas { 
-    max-width: calc(100% - 30px); /* Keep existing max-width calc for mobile */
+  #liveWaveformCanvas {
+    max-width: calc(100% - 30px);
   }
 
   .action-button { width: 44px; height: 44px; font-size: 16px; }
@@ -1106,7 +1117,7 @@ body:not(.light-mode) {
     padding: 2px 0;
   }
   .recording-interface.is-live .app-attribution {
-    font-size: 7px; /* WAS 8px, made very small for mobile live interface */
+    font-size: 7px;
   }
 
 
@@ -1125,15 +1136,17 @@ body:not(.light-mode) {
   }
 }
 
-/* iOS PWA Safe Area Adjustments for Footer */
+/* iOS PWA Safe Area Adjustments:
+   - Non-live footer padding is now handled by .app-container's global safe area padding.
+   - Live footer's internal padding-bottom is now globally defined on .recording-interface.is-live.
+*/
 @media (display-mode: standalone) {
-  .recording-interface {
-    /* Base padding-bottom is 10px (from its general style) */
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  }
+  /* .recording-interface {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* This is now redundant due to .app-container padding */
+  /* } */
 
+  /*
   .recording-interface.is-live {
-    /* Base padding-bottom is 4px (from its .is-live style, was 5px) */
-    padding-bottom: calc(4px + env(safe-area-inset-bottom));
-  }
+    padding-bottom: calc(4px + env(safe-area-inset-bottom)); /* Moved to general .is-live style */
+  /* } */
 }
