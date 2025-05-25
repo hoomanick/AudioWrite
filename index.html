@@ -38,6 +38,10 @@
   </head>
   <body>
     <div class="app-container">
+      <div id="iosInstallBanner" class="ios-install-banner hidden">
+        <p>To install AudioWrite on your iPhone/iPad: tap the Share button <i class="fas fa-share-square"></i> then 'Add to Home Screen'.</p>
+        <button id="dismissIosInstallBannerButton" class="dismiss-banner-button" title="Dismiss">&times;</button>
+      </div>
       <div id="focusPromptOverlay" class="focus-prompt-overlay hidden">
         <span class="focus-prompt-text">Let's AudioWrite what's in your mind!</span>
       </div>
@@ -148,24 +152,32 @@
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>API Key Settings</h2>
+                <h2>Settings</h2>
                 <button id="closeSettingsModalButton" class="close-button" title="Close Settings">&times;</button>
             </div>
             <div class="settings-modal-body">
-                <label for="apiKeyInput">Gemini API Key:</label>
-                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API Key">
-                <button id="saveApiKeyButton" class="action-button-primary">Save & Apply Key</button>
-                <p class="api-key-info">Your API Key is stored in session storage and will be cleared when you close this browser tab/window. It is not saved permanently or logged.</p>
-                <p id="apiKeyStatus" class="api-key-status"></p>
-                <div class="api-key-instructions">
-                    <h3>How to get your API key:</h3>
-                    <ol>
-                        <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
-                        <li>Sign in with your Google account.</li>
-                        <li>Click "Create API Key" (you might need to create a project first).</li>
-                        <li>Copy the generated key and paste it into the field above.</li>
-                    </ol>
-                    <p class="api-key-info">Make sure to keep your API key secure and do not share it publicly.</p>
+                <div class="settings-section api-key-section">
+                    <h3><i class="fas fa-key"></i> Gemini API Key</h3>
+                    <label for="apiKeyInput">Enter your Gemini API Key:</label>
+                    <input type="password" id="apiKeyInput" placeholder="Paste your API Key here">
+                    <button id="saveApiKeyButton" class="action-button-primary">Save & Apply Key</button>
+                    <p class="api-key-info">Your API Key is stored in session storage and will be cleared when you close this browser tab/window.</p>
+                    <p id="apiKeyStatus" class="api-key-status"></p>
+                     <div class="api-key-instructions">
+                        <h4>How to get your API key:</h4>
+                        <ol>
+                            <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
+                            <li>Sign in with your Google account.</li>
+                            <li>Click "Create API Key" (you might need to create a project first).</li>
+                            <li>Copy the generated key and paste it into the field above.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div id="installAppSection" class="settings-section install-app-section hidden">
+                     <h3><i class="fas fa-download"></i> Install AudioWrite</h3>
+                     <p>Get quick access to AudioWrite by installing it on your device.</p>
+                     <button id="installAppButton" class="action-button-primary">Install App</button>
                 </div>
             </div>
         </div>

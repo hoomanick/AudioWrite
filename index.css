@@ -165,6 +165,51 @@ body {
   position: relative; /* For positioning context of focus-prompt-overlay */
 }
 
+/* iOS Install Banner */
+.ios-install-banner {
+  background-color: var(--color-accent);
+  color: white;
+  padding: 10px 15px;
+  text-align: center;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky; /* Or fixed if you prefer it always on top */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1500; /* Ensure it's above other content but below modals */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+body.light-mode .ios-install-banner {
+    background-color: var(--color-accent-light);
+    color: white;
+}
+.ios-install-banner p {
+  margin: 0;
+  flex-grow: 1;
+}
+.ios-install-banner i {
+  margin: 0 4px;
+  font-size: 1.1em; /* Slightly larger share icon */
+}
+.dismiss-banner-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+  margin-left: 10px;
+}
+.dismiss-banner-button:hover {
+  opacity: 0.8;
+}
+
+
 .main-content {
   flex: 1;
   display: flex;
@@ -804,16 +849,41 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 .settings-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px; /* Increased gap between sections */
     padding-top: 8px;
 }
-.settings-modal-body label {
+
+.settings-section {
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background-color: var(--color-surface);
+}
+
+.settings-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+.settings-section h3 i {
+    margin-right: 8px;
+    color: var(--color-accent);
+}
+
+.api-key-section label {
+    display: block;
     font-size: 14px;
     font-weight: 500;
     color: var(--color-text-secondary);
+    margin-bottom: 6px;
 }
+
 #apiKeyInput {
-    background-color: var(--color-surface);
+    width: 100%;
+    background-color: var(--color-bg-alt); /* Differentiated background */
     color: var(--color-text);
     border: 1px solid var(--color-border);
     border-radius: 6px;
@@ -821,6 +891,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
     font-size: 14px;
     font-family: var(--font-primary);
     outline: none;
+    margin-bottom: 10px;
 }
 #apiKeyInput:focus {
     border-color: var(--color-accent);
@@ -840,6 +911,9 @@ body.light-mode #apiKeyInput:focus {
     font-weight: 500;
     cursor: pointer;
     transition: background-color var(--transition-fast);
+    display: block; /* Make it block to take full width or adjust as needed */
+    width: 100%; /* Full width within its section */
+    text-align: center;
 }
 .action-button-primary:hover {
     filter: brightness(1.1);
@@ -852,7 +926,7 @@ body.light-mode .action-button-primary {
     font-size: 12px;
     color: var(--color-text-tertiary);
     line-height: 1.4;
-    margin-top: 4px;
+    margin-top: 8px;
 }
 .api-key-status {
     font-size: 13px;
@@ -874,8 +948,8 @@ body.light-mode .action-button-primary {
     padding-top: 12px;
     border-top: 1px solid var(--color-border);
 }
-.api-key-instructions h3 {
-    font-size: 15px;
+.api-key-instructions h4 { /* Changed to h4 for better hierarchy */
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text);
     margin-bottom: 8px;
@@ -897,6 +971,14 @@ body.light-mode .action-button-primary {
 }
 .api-key-instructions ol li a:hover {
     text-decoration: underline;
+}
+
+/* Install App Section in Settings */
+.install-app-section p {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.5;
 }
 
 
@@ -1043,5 +1125,13 @@ body:not(.light-mode) {
     font-size: 20px;
     padding: 15px 25px;
     max-width: 90%;
+  }
+
+  .ios-install-banner {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .ios-install-banner p {
+    line-height: 1.3;
   }
 }

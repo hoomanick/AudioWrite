@@ -10,6 +10,7 @@ import {marked} from 'marked';
 const MODEL_NAME = 'gemini-2.5-flash-preview-04-17';
 const LOCAL_STORAGE_KEY = 'voiceNotesApp_notes';
 const SESSION_STORAGE_API_KEY = 'voiceNotesApp_apiKey';
+const SESSION_STORAGE_IOS_A2HS_DISMISSED = 'voiceNotesApp_iosA2HSDismissed';
 
 interface Note {
   id: string;
@@ -96,6 +97,13 @@ class VoiceNotesApp {
   private focusPromptOverlay: HTMLDivElement;
   private isLiveRecordingActive = false;
 
+  // PWA Install related
+  private deferredInstallPrompt: any | null = null; // Using 'any' as BeforeInstallPromptEvent is not standard
+  private iosInstallBanner: HTMLDivElement;
+  private dismissIosInstallBannerButton: HTMLButtonElement;
+  private installAppSection: HTMLDivElement;
+  private installAppButton: HTMLButtonElement;
+
 
   constructor() {
     this.appContainer = document.querySelector('.app-container') as HTMLDivElement;
@@ -133,6 +141,12 @@ class VoiceNotesApp {
     this.saveApiKeyButton = document.getElementById('saveApiKeyButton') as HTMLButtonElement;
     this.apiKeyStatus = document.getElementById('apiKeyStatus') as HTMLParagraphElement;
     
+    // PWA Install elements
+    this.iosInstallBanner = document.getElementById('iosInstallBanner') as HTMLDivElement;
+    this.dismissIosInstallBannerButton = document.getElementById('dismissIosInstallBannerButton') as HTMLButtonElement;
+    this.installAppSection = document.getElementById('installAppSection') as HTMLDivElement;
+    this.installAppButton = document.getElementById('installAppButton') as HTMLButtonElement;
+
     if (this.liveWaveformCanvas) {
       this.liveWaveformCtx = this.liveWaveformCanvas.getContext('2d');
     }
@@ -144,6 +158,7 @@ class VoiceNotesApp {
     this.populateLanguageDropdown();
     this.bindEventListeners();
     this.initTheme();
+    this.initializePWAInstallHandlers(); // Initialize PWA install handlers
     this.loadNotes();
 
     if (this.allNotes.length === 0) {
@@ -183,8 +198,6 @@ class VoiceNotesApp {
       return;
     }
     try {
-      // Attempt to initialize with the new key to validate it (somewhat)
-      // A proper validation would be making a test call, but this is a start.
       const testGenAI = new GoogleGenAI({ apiKey: apiKey.trim() });
       this.genAI = testGenAI;
       this.userApiKey = apiKey.trim();
@@ -193,8 +206,8 @@ class VoiceNotesApp {
       this.closeSettingsModal();
     } catch (error) {
       console.error("Error initializing GoogleGenAI with new API key:", error);
-      this.genAI = null; // Revert to null if initialization fails
-      this.userApiKey = null; // Clear potentially bad key
+      this.genAI = null; 
+      this.userApiKey = null; 
       sessionStorage.removeItem(SESSION_STORAGE_API_KEY);
       this.updateApiKeyStatusUI("Invalid API Key format or other initialization error. Please check your key.", "error");
     }
@@ -242,23 +255,21 @@ class VoiceNotesApp {
     const isApiKeySet = !!(this.genAI && this.userApiKey);
     const isIdle = !this.isRecording && !this.isLiveRecordingActive;
 
-    // Settings (Key) button glow
-    if (isInFocusMode && !isApiKeySet && isIdle) {
-      this.settingsButton.classList.add('settings-needs-glow');
-    } else {
-      this.settingsButton.classList.remove('settings-needs-glow');
+    if (this.settingsButton) {
+        if (isInFocusMode && !isApiKeySet && isIdle) {
+          this.settingsButton.classList.add('settings-needs-glow');
+        } else {
+          this.settingsButton.classList.remove('settings-needs-glow');
+        }
     }
-
-    // Record button "ready" glow (not in focus mode)
-    if (isApiKeySet && !isInFocusMode && isIdle) {
-      this.recordButton.classList.add('record-button-ready-glow');
-    } else {
-      this.recordButton.classList.remove('record-button-ready-glow');
+    
+    if (this.recordButton) {
+        if (isApiKeySet && !isInFocusMode && isIdle) {
+          this.recordButton.classList.add('record-button-ready-glow');
+        } else {
+          this.recordButton.classList.remove('record-button-ready-glow');
+        }
     }
-
-    // The record button's glow when in focus mode (due to empty note but API key set)
-    // is handled by CSS: .app-container.app-focus-mode ... .record-button:not(:disabled)
-    // So, no specific JS class is needed for that record button state here.
   }
 
 
@@ -291,10 +302,65 @@ class VoiceNotesApp {
     this.saveApiKeyButton.addEventListener('click', () => this.setApiKey(this.apiKeyInput.value));
 
 
-    // Save changes from contenteditable divs on blur
     this.rawTranscriptionDiv.addEventListener('blur', () => this.handleContentEditableChange('rawTranscription'));
     this.polishedNoteDiv.addEventListener('blur', () => this.handleContentEditableChange('polishedNote'));
+
+    // PWA Install Listeners
+    if (this.installAppButton) {
+        this.installAppButton.addEventListener('click', () => this.promptInstall());
+    }
+    if (this.dismissIosInstallBannerButton) {
+        this.dismissIosInstallBannerButton.addEventListener('click', () => this.dismissIosBanner());
+    }
   }
+
+  private initializePWAInstallHandlers(): void {
+    // Android A2HS
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); // Prevent the mini-infobar
+      this.deferredInstallPrompt = e; // Stash the event so it can be triggered later.
+      if (this.installAppSection) {
+        this.installAppSection.classList.remove('hidden'); // Show our custom install button
+      }
+    });
+
+    // iOS A2HS Banner
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+
+    if (isIOS && !isInStandaloneMode && !sessionStorage.getItem(SESSION_STORAGE_IOS_A2HS_DISMISSED)) {
+      if (this.iosInstallBanner) {
+        this.iosInstallBanner.classList.remove('hidden');
+      }
+    }
+  }
+
+  private async promptInstall(): Promise<void> {
+    if (this.deferredInstallPrompt && this.installAppSection) {
+      this.installAppSection.classList.add('hidden'); // Hide our button
+      this.deferredInstallPrompt.prompt(); // Show the browser install prompt
+      try {
+        const { outcome } = await this.deferredInstallPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        if (outcome === 'accepted') {
+          // User accepted the A2HS prompt
+        } else {
+          // User dismissed the A2HS prompt
+        }
+      } catch (error) {
+        console.error('Error handling install prompt choice:', error);
+      }
+      this.deferredInstallPrompt = null; // We've used the prompt.
+    }
+  }
+
+  private dismissIosBanner(): void {
+    if (this.iosInstallBanner) {
+      this.iosInstallBanner.classList.add('hidden');
+      sessionStorage.setItem(SESSION_STORAGE_IOS_A2HS_DISMISSED, 'true');
+    }
+  }
+
 
   private handleTitleChange(): void {
     const currentNote = this.getCurrentNote();
@@ -331,8 +397,6 @@ class VoiceNotesApp {
     if (currentNote) {
       currentNote.targetLanguage = this.outputLanguageSelect.value;
       this.saveNotes();
-      // If API key is set, consider auto-repolishing or prompting
-      // For now, just save. User can re-polish manually.
     }
   }
 
@@ -474,7 +538,7 @@ class VoiceNotesApp {
 
   private async toggleRecording(): Promise<void> {
     if (!this.genAI || !this.userApiKey) {
-        this.updateApiKeyStatusUI(); // This will show the prompt to set the key
+        this.updateApiKeyStatusUI(); 
         this.openSettingsModal();
         return;
     }
@@ -586,7 +650,7 @@ class VoiceNotesApp {
   }
 
   private async startRecording(): Promise<void> {
-    if (!this.genAI || !this.userApiKey) { // Double check, should be caught by toggleRecording
+    if (!this.genAI || !this.userApiKey) { 
       this.updateApiKeyStatusUI();
       this.openSettingsModal();
       return;
@@ -751,7 +815,6 @@ class VoiceNotesApp {
         }
     } else if (typeof displayErrorMessage === 'string' && displayErrorMessage.includes("API key not valid")) {
         displayErrorMessage = "API Key not valid. Please check your key in Settings.";
-        // Consider opening settings modal automatically or providing a more direct link
         this.openSettingsModal();
     }
     return displayErrorMessage;
@@ -969,10 +1032,8 @@ ${noteToPolish.rawTranscription}`;
         await this.stopRecording(); 
     }
 
-    // Defensive check for this.allNotes
     if (!Array.isArray(this.allNotes)) {
         console.warn("CRITICAL: this.allNotes is not an array before push in createNewNote! Attempting recovery.");
-        // Attempt to reload from storage. This is a recovery attempt.
         const storedNotes = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedNotes) {
             try {
@@ -994,7 +1055,7 @@ ${noteToPolish.rawTranscription}`;
             }
         } else {
              console.warn("CRITICAL: No stored data for recovery. Resetting allNotes to empty array.");
-            this.allNotes = []; // If no stored data, ensure it's an empty array.
+            this.allNotes = []; 
         }
     }
 
@@ -1046,6 +1107,12 @@ ${noteToPolish.rawTranscription}`;
 
   private openSettingsModal(): void {
     if (this.userApiKey) this.apiKeyInput.value = this.userApiKey;
+    // If deferredInstallPrompt is available, show the install section
+    if (this.deferredInstallPrompt && this.installAppSection) {
+        this.installAppSection.classList.remove('hidden');
+    } else if (this.installAppSection) {
+        this.installAppSection.classList.add('hidden');
+    }
     this.updateApiKeyStatusUI(); 
     this.settingsModal.classList.remove('hidden');
   }
@@ -1053,7 +1120,7 @@ ${noteToPolish.rawTranscription}`;
   private closeSettingsModal(): void {
     this.settingsModal.classList.add('hidden');
     this.updateApiKeyStatusUI(); 
-    this.checkAndSetFocusMode(); // Re-check focus and glow states
+    this.checkAndSetFocusMode(); 
   }
 
 
@@ -1094,8 +1161,6 @@ ${noteToPolish.rawTranscription}`;
       try {
         const item = document.createElement('div');
         item.className = 'archive-item';
-        // Removed: item.classList.add('disabled') based on API key. 
-        // Individual actions needing API key are disabled directly.
         item.setAttribute('data-note-id', note.id);
 
         const noteTitle = note.title || 'Untitled Note';
@@ -1168,7 +1233,7 @@ ${noteToPolish.rawTranscription}`;
               await this.getPolishedNote(note.id, newLang, customPromptForRepolish);
               
               repolishButton.textContent = 'Re-polish';
-              if (this.genAI && this.userApiKey) { // Re-enable only if API key still valid
+              if (this.genAI && this.userApiKey) { 
                 repolishButton.disabled = false;
                 langSelect.disabled = false;
               }
