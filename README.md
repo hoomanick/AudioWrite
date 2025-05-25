@@ -30,14 +30,6 @@ AudioWrite is a client-side web application that leverages Google's Gemini AI to
 *   📱 **Responsive Design:** Works on desktop and mobile.
 *   PWA **Progressive Web App:** Installable for an app-like experience.
 
-## 📸 Screenshots
-
-*(It's highly recommended to add 2-3 screenshots of your application here. For example:*
-*   *Main interface showing a polished note.*
-*   *Live recording interface with waveform.*
-*   *Archive modal and Settings modal.*)
-
-<!-- Example: <img src="docs/screenshot-main.png" alt="AudioWrite Main Interface" width="600"/> -->
 
 ## 🛠️ Core Technologies
 
@@ -105,19 +97,6 @@ If you want to run a local copy *after cloning the repository*:
 *   **Offline Access:** The app shell and previously saved notes (from local storage) are accessible offline.
 *   *Note: AI features require an active internet connection and a valid API key for the session. The Service Worker functionality for advanced PWA features (like full offline asset caching post-build) needs to be integrated with a Vite-specific PWA plugin (e.g., `vite-plugin-pwa`) for optimal compatibility with the build process.*
 
-## 🚀 Deployment
-
-AudioWrite is built using Vite and deployed as a static website to GitHub Pages.
-
-### GitHub Pages Deployment Steps (Summary):
-
-1.  Push your code to your GitHub repository (`main` branch for source).
-2.  Ensure `vite.config.ts` has the correct `base` path (e.g., `/AudioWrite/`).
-3.  Ensure `package.json` has the correct `homepage` URL.
-4.  Run `npm run deploy`. This script builds the project and pushes the `dist` folder contents to the `gh-pages` branch.
-5.  Configure GitHub Pages (Settings > Pages) to deploy from the `gh-pages` branch.
-6.  Your site will be available at `https://hoomanick.github.io/AudioWrite/`.
-7.  *Users of the deployed version will need to provide their own Gemini API Key.*
 
 ## 🙌 Contributing
 
