@@ -483,7 +483,8 @@ body.light-mode #customPromptTextarea {
   /* Transition properties for when it becomes .is-live (fixed) */
   transition: opacity 0.3s ease-out, transform 0.35s ease-out,
               background-color var(--transition-slow) ease-in-out, /* For bg change */
-              height var(--transition-slow) ease-in-out; /* If height changes for fixed */
+              height var(--transition-slow) ease-in-out, /* If height changes for fixed */
+              padding-bottom var(--transition-normal); /* Transition for safe area padding */
   z-index: 10; /* Base z-index, lower than live state */
 }
 
@@ -652,6 +653,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   text-align: center;
   width: 100%;
   padding: 4px 0; /* Small padding top and bottom */
+  transition: padding-bottom var(--transition-normal); /* Transition for safe area padding */
 }
 
 .recording-interface.is-live .app-attribution {
@@ -1134,4 +1136,28 @@ body:not(.light-mode) {
   .ios-install-banner p {
     line-height: 1.3;
   }
+}
+
+/* iOS PWA Safe Area Adjustments for Footer */
+@media (display-mode: standalone) {
+  .recording-interface {
+    /* Base padding-bottom is 5px (from its general style) for the .recording-interface */
+    /* We also need to account for the app-attribution's own padding.
+       The goal is to ensure the entire content of .recording-interface is visible.
+       So, we add the safe-area-inset to the existing padding.
+    */
+    padding-bottom: calc(5px + env(safe-area-inset-bottom));
+  }
+
+  .recording-interface.is-live {
+    /* Base padding-bottom is 20px (from its .is-live style) for the .recording-interface */
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  /*
+    If the app-attribution div itself needs extra padding *within* the recording-interface,
+    you could target it directly, but usually padding the container (.recording-interface) is sufficient.
+    For instance, if the .app-attribution was outside and fixed, you'd pad it too.
+    Since it's inside .recording-interface, padding .recording-interface should lift everything within it.
+  */
 }
