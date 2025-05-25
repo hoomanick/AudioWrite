@@ -95,7 +95,7 @@
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   --footer-height: 110px;
-  --live-footer-height: 175px; /* WAS 200px. Height of the live recording interface when fixed */
+  --live-footer-height: 145px; /* WAS 175px. Aggressively reduced. */
 }
 
 body.light-mode {
@@ -500,9 +500,9 @@ body.light-mode #customPromptTextarea {
   border-top: 1px solid var(--glass-recording-border);
   box-shadow: 0 -4px 20px var(--glass-shadow);
 
-  justify-content: flex-start;
-  padding-top: 5px;    /* WAS 8px */
-  padding-bottom: 5px; /* WAS 8px. Base for safe area calc. */
+  justify-content: flex-start; /* Elements will stack from the top */
+  padding-top: 4px;    /* WAS 5px */
+  padding-bottom: 4px; /* WAS 5px. Base for safe area calc. */
 }
 
 .status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); }
@@ -529,9 +529,9 @@ body.light-mode #customPromptTextarea {
 }
 
 .live-recording-title {
-  font-size: 14px;    /* WAS 16px */
+  font-size: 12px;    /* WAS 14px */
   color: var(--color-text);
-  margin-bottom: 4px; /* WAS 6px */
+  margin-bottom: 2px; /* WAS 4px */
   text-align: center;
   font-weight: 500;
   font-family: var(--font-primary);
@@ -540,17 +540,17 @@ body.light-mode #customPromptTextarea {
 #liveWaveformCanvas {
   width: 100%;
   max-width: 320px;
-  height: 32px;       /* WAS 40px */
-  margin-bottom: 5px; /* WAS 8px */
+  height: 24px;       /* WAS 32px */
+  margin-bottom: 3px; /* WAS 5px */
   border-radius: 4px;
 }
 
 .live-recording-timer {
   font-family: var(--font-mono);
-  font-size: clamp(20px, 4.8vw, 28px); /* WAS clamp(24px, 5.5vw, 32px) */
+  font-size: clamp(16px, 4.2vw, 22px); /* WAS clamp(20px, 4.8vw, 28px) */
   font-weight: 400;
   color: var(--color-text);
-  margin-bottom: 5px; /* WAS 10px */
+  margin-bottom: 3px; /* WAS 5px */
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -561,7 +561,7 @@ body.light-mode #customPromptTextarea {
   justify-content: center;
   gap: 12px;
   position: relative;
-  margin-bottom: 5px; /* WAS 8px */
+  margin-bottom: 2px; /* WAS 5px */
 }
 
 .action-button {
@@ -643,9 +643,9 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 
 .recording-interface.is-live .app-attribution {
-  font-size: 9px;     /* WAS 10px */
-  padding-top: 2px;   /* WAS 6px */
-  padding-bottom: 2px;
+  font-size: 8px;      /* WAS 9px (global reduction) */
+  padding-top: 1px;    /* WAS 2px */
+  padding-bottom: 2px; /* Existing padding-bottom for this element */
 }
 
 
@@ -1092,8 +1092,6 @@ body:not(.light-mode) {
   #liveWaveformCanvas { 
     max-width: calc(100% - 30px); /* Keep existing max-width calc for mobile */
   }
-  /* .live-recording-timer clamp is now global and smaller, mobile specific override removed */
-
 
   .action-button { width: 44px; height: 44px; font-size: 16px; }
   .recording-controls { gap: 8px; }
@@ -1108,7 +1106,7 @@ body:not(.light-mode) {
     padding: 2px 0;
   }
   .recording-interface.is-live .app-attribution {
-    font-size: 8px; /* WAS 9px */
+    font-size: 7px; /* WAS 8px, made very small for mobile live interface */
   }
 
 
@@ -1135,7 +1133,7 @@ body:not(.light-mode) {
   }
 
   .recording-interface.is-live {
-    /* Base padding-bottom is 5px (from its .is-live style) */
-    padding-bottom: calc(5px + env(safe-area-inset-bottom));
+    /* Base padding-bottom is 4px (from its .is-live style, was 5px) */
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
   }
 }
