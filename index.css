@@ -145,7 +145,7 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.65;
-  height: 100vh;
+  height: 100%; /* Changed from 100vh */
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -165,7 +165,7 @@ body {
   position: relative;
   padding-top: env(safe-area-inset-top, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* padding-bottom: env(safe-area-inset-bottom, 0px); Removed from here */
   padding-left: env(safe-area-inset-left, 0px);
 }
 
@@ -179,13 +179,11 @@ body {
   justify-content: space-between;
   align-items: center;
   position: sticky;
-  top: 0; /* Will be effectively 0 within the safe-area padded app-container */
-  left: 0; /* Will be effectively 0 within the safe-area padded app-container */
+  top: 0; 
+  left: 0; 
   width: 100%;
   z-index: 1500;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  /* Adjust for safe-area if app-container didn't have padding, but it does now. */
-  /* margin-top: calc(-1 * env(safe-area-inset-top, 0px)); /* Counteract app-container's top padding if needed */
 }
 body.light-mode .ios-install-banner {
     background-color: var(--color-accent-light);
@@ -222,11 +220,15 @@ body.light-mode .ios-install-banner {
   position: relative;
   overflow: hidden;
   transition: padding-bottom var(--transition-slow) ease-in-out;
+  padding-bottom: env(safe-area-inset-bottom, 0px); /* Added for flow content bottom safe area */
 }
 
-.main-content:has(> .recording-interface.is-live) {
+/* This rule is for making space for the FIXED live footer */
+.app-container.app-is-live-recording .note-content-wrapper {
+  /* Ensure scrollable content is above the fixed live footer */
   padding-bottom: var(--live-footer-height);
 }
+
 
 .note-area {
   flex: 1;
@@ -432,7 +434,7 @@ body.light-mode #customPromptTextarea {
 .note-content-wrapper {
   flex: 1;
   overflow-y: auto;
-  padding: 0 40px 40px;
+  padding: 0 40px 40px; /* Base padding, bottom padding adjusted by JS or specific rule when live */
   position: relative;
   min-height: 0;
 }
@@ -474,12 +476,12 @@ body.light-mode #customPromptTextarea {
 
 .recording-interface {
   height: var(--footer-height);
-  width: 100%; /* Will be constrained by app-container's safe-area padding */
+  width: 100%; 
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px 20px;
+  padding: 10px 20px; /* Horizontal padding, vertical managed by flex + height */
   background-color: transparent;
   border-top: 1px solid transparent;
   flex-shrink: 0;
@@ -488,11 +490,11 @@ body.light-mode #customPromptTextarea {
               height var(--transition-slow) ease-in-out,
               padding-bottom var(--transition-normal);
   z-index: 10;
+  /* Its bottom position is now dictated by .main-content's bottom safe area padding */
 }
 
 .recording-interface.is-live {
   position: fixed;
-  /* Position relative to viewport, respecting app-container's safe-area for its edges */
   bottom: env(safe-area-inset-bottom, 0px);
   left: env(safe-area-inset-left, 0px);
   right: env(safe-area-inset-right, 0px);
@@ -506,11 +508,11 @@ body.light-mode #customPromptTextarea {
   box-shadow: 0 -4px 20px var(--glass-shadow);
 
   justify-content: flex-start;
-  /* Internal padding now also considers safe areas for its content */
+  /* Internal padding is now base padding, as positioning handles safe areas */
   padding-top: 4px;
-  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); /* Content safe from bottom */
-  padding-left: calc(20px + env(safe-area-inset-left, 0px));   /* Content safe from left */
-  padding-right: calc(20px + env(safe-area-inset-right, 0px));  /* Content safe from right */
+  padding-bottom: 4px; 
+  padding-left: 20px;   
+  padding-right: 20px;  
 }
 
 .status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); }
@@ -689,9 +691,9 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   padding: 24px;
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
-  width: 90%; /* Relative to safe-area padded modal parent */
+  width: 90%; 
   max-width: 700px;
-  max-height: 85vh; /* Relative to safe-area padded modal parent */
+  max-height: 85vh; 
   display: flex;
   flex-direction: column;
   transform: scale(0.95);
@@ -1042,10 +1044,10 @@ body:not(.light-mode) {
 
 .focus-prompt-overlay {
   position: fixed;
-  /* Adjusted to respect safe areas */
   top: env(safe-area-inset-top, 0px);
   left: env(safe-area-inset-left, 0px);
   right: env(safe-area-inset-right, 0px);
+  /* Positioned above the relevant footer, which itself respects safe-area-inset-bottom */
   bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
@@ -1055,12 +1057,13 @@ body:not(.light-mode) {
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out;
-  padding: 20px; /* Internal padding for the content from the safe area edges */
+  padding: 20px; 
 }
 
 .app-container.app-focus-mode .focus-prompt-overlay {
   opacity: 1;
 }
+/* When live recording is active, focus prompt should be above the live footer */
 .app-container.app-is-live-recording.app-focus-mode .focus-prompt-overlay {
   bottom: calc(var(--live-footer-height) + env(safe-area-inset-bottom, 0px));
 }
@@ -1092,12 +1095,13 @@ body:not(.light-mode) {
   .tab-navigation-container { width: 100%; }
   .tab-navigation { width: 100%; }
   .tab-button { flex-grow: 1; text-align: center; }
-  .note-content-wrapper { padding: 0 20px 20px; }
+  .note-content-wrapper { padding: 0 20px 20px; } /* Base padding */
 
+  /* Live footer internal padding for mobile */
   .recording-interface.is-live {
-    padding-left: calc(15px + env(safe-area-inset-left, 0px));
-    padding-right: calc(15px + env(safe-area-inset-right, 0px));
-    /* padding-bottom will inherit from the general .is-live rule */
+    padding-left: 15px;
+    padding-right: 15px;
+    /* padding-top and padding-bottom (4px) are inherited */
   }
 
   #liveWaveformCanvas {
@@ -1120,7 +1124,6 @@ body:not(.light-mode) {
     font-size: 7px;
   }
 
-
   .focus-prompt-text {
     font-size: 20px;
     padding: 15px 25px;
@@ -1136,17 +1139,8 @@ body:not(.light-mode) {
   }
 }
 
-/* iOS PWA Safe Area Adjustments:
-   - Non-live footer padding is now handled by .app-container's global safe area padding.
-   - Live footer's internal padding-bottom is now globally defined on .recording-interface.is-live.
-*/
+/* Remove PWA standalone specific padding overrides as general safe area handling is now more robust */
 @media (display-mode: standalone) {
-  /* .recording-interface {
-    padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* This is now redundant due to .app-container padding */
-  /* } */
-
-  /*
-  .recording-interface.is-live {
-    padding-bottom: calc(4px + env(safe-area-inset-bottom)); /* Moved to general .is-live style */
-  /* } */
+  /* Any standalone-specific adjustments can go here if still needed, */
+  /* but general safe area padding should now cover most cases. */
 }
