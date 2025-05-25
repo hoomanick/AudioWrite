@@ -94,8 +94,8 @@
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  --footer-height: 110px; /* WAS 130px */
-  --live-footer-height: 200px; /* WAS 280px then 230px. Height of the live recording interface when fixed */
+  --footer-height: 110px;
+  --live-footer-height: 175px; /* WAS 200px. Height of the live recording interface when fixed */
 }
 
 body.light-mode {
@@ -501,8 +501,8 @@ body.light-mode #customPromptTextarea {
   box-shadow: 0 -4px 20px var(--glass-shadow);
 
   justify-content: flex-start;
-  padding-top: 8px; /* WAS 15px */
-  padding-bottom: 8px; /* WAS 15px. Base for safe area calc. */
+  padding-top: 5px;    /* WAS 8px */
+  padding-bottom: 5px; /* WAS 8px. Base for safe area calc. */
 }
 
 .status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); }
@@ -529,9 +529,9 @@ body.light-mode #customPromptTextarea {
 }
 
 .live-recording-title {
-  font-size: 16px; /* WAS 17px */
+  font-size: 14px;    /* WAS 16px */
   color: var(--color-text);
-  margin-bottom: 6px; /* WAS 12px default / 8px mobile */
+  margin-bottom: 4px; /* WAS 6px */
   text-align: center;
   font-weight: 500;
   font-family: var(--font-primary);
@@ -539,18 +539,18 @@ body.light-mode #customPromptTextarea {
 
 #liveWaveformCanvas {
   width: 100%;
-  max-width: 320px; /* WAS 340px */
-  height: 40px; /* WAS 70px default / 50px mobile */
-  margin-bottom: 8px; /* WAS 18px default / 12px mobile */
+  max-width: 320px;
+  height: 32px;       /* WAS 40px */
+  margin-bottom: 5px; /* WAS 8px */
   border-radius: 4px;
 }
 
 .live-recording-timer {
   font-family: var(--font-mono);
-  font-size: clamp(24px, 5.5vw, 32px); /* WAS 44px default / 32px mobile */
+  font-size: clamp(20px, 4.8vw, 28px); /* WAS clamp(24px, 5.5vw, 32px) */
   font-weight: 400;
   color: var(--color-text);
-  margin-bottom: 10px; /* WAS 22px default / 15px mobile */
+  margin-bottom: 5px; /* WAS 10px */
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -561,7 +561,7 @@ body.light-mode #customPromptTextarea {
   justify-content: center;
   gap: 12px;
   position: relative;
-  margin-bottom: 8px;
+  margin-bottom: 5px; /* WAS 8px */
 }
 
 .action-button {
@@ -643,8 +643,8 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 
 .recording-interface.is-live .app-attribution {
-  font-size: 10px;
-  padding-top: 6px;
+  font-size: 9px;     /* WAS 10px */
+  padding-top: 2px;   /* WAS 6px */
   padding-bottom: 2px;
 }
 
@@ -1091,12 +1091,9 @@ body:not(.light-mode) {
 
   #liveWaveformCanvas { 
     max-width: calc(100% - 30px); /* Keep existing max-width calc for mobile */
-    /* height and margin-bottom are now global */
   }
-  .live-recording-timer { 
-    font-size: clamp(24px, 5.5vw, 30px); /* Adjusted max for mobile in clamp */
-    /* margin-bottom is now global */
-  }
+  /* .live-recording-timer clamp is now global and smaller, mobile specific override removed */
+
 
   .action-button { width: 44px; height: 44px; font-size: 16px; }
   .recording-controls { gap: 8px; }
@@ -1111,8 +1108,7 @@ body:not(.light-mode) {
     padding: 2px 0;
   }
   .recording-interface.is-live .app-attribution {
-    font-size: 9px;
-    padding-top: 4px;
+    font-size: 8px; /* WAS 9px */
   }
 
 
@@ -1139,7 +1135,7 @@ body:not(.light-mode) {
   }
 
   .recording-interface.is-live {
-    /* Base padding-bottom is 8px (from its .is-live style) */
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    /* Base padding-bottom is 5px (from its .is-live style) */
+    padding-bottom: calc(5px + env(safe-area-inset-bottom));
   }
 }
