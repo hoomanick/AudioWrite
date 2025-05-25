@@ -1,4 +1,5 @@
 
+
 # AudioWrite ✨
 
 *Effortless dictation powered by Gemini. Turn rambling voice recordings into perfectly transcribed and polished notes.*
@@ -11,8 +12,7 @@ AudioWrite is a client-side web application that leverages Google's Gemini AI to
 
 ## 🚀 Live Demo
 
-[Try AudioWrite Live!](https://YOUR_USERNAME.github.io/YOUR_REPOSITORY_NAME/)
-*(Replace `YOUR_USERNAME` and `YOUR_REPOSITORY_NAME` with your GitHub details after deploying via GitHub Pages, or update with your live URL.)*
+[Try AudioWrite Live!](https://hoomanick.github.io/AudioWrite/)
 
 ## 🌟 Key Features
 
@@ -44,8 +44,9 @@ AudioWrite is a client-side web application that leverages Google's Gemini AI to
 *   **Frontend:** HTML5, CSS3, TypeScript
 *   **AI:** Google Gemini API (`@google/genai`)
 *   **Markdown Rendering:** `marked`
-*   **PWA:** Service Worker
+*   **PWA:** Service Worker (temporarily commented out, needs Vite-specific PWA plugin for build compatibility)
 *   **Storage:** Browser Local Storage (notes) & Session Storage (API key)
+*   **Build Tool:** Vite
 
 ## ⚙️ Getting Started
 
@@ -54,19 +55,28 @@ AudioWrite is a client-side web application that leverages Google's Gemini AI to
 *   A modern web browser (e.g., Chrome, Firefox, Safari, Edge).
 *   **Your own Google Gemini API Key.** You can obtain one from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-### Running Locally
+### Running Locally (after cloning)
+
+If you want to run a local copy *after cloning the repository*:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
-    cd YOUR_REPOSITORY_NAME
+    git clone https://github.com/hoomanick/AudioWrite.git
+    cd AudioWrite
     ```
-    *(Update with your GitHub details.)*
 
-2.  **Open `index.html`:**
-    Navigate to the project directory and open `index.html` directly in your web browser.
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-3.  **Set Your API Key:**
+3.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    This will usually open the app in your browser at `http://localhost:5173` (or a similar port).
+
+4.  **Set Your API Key:**
     *   Click the **Settings icon** (🔑) in the app.
     *   Enter your Gemini API Key and click "Save & Apply Key".
     *   **This key is required for all AI features.** It's stored in `sessionStorage` (cleared when you close the browser tab/window).
@@ -93,22 +103,21 @@ AudioWrite is a client-side web application that leverages Google's Gemini AI to
 
 *   **Installable:** On supported devices, install AudioWrite for an app-like experience.
 *   **Offline Access:** The app shell and previously saved notes (from local storage) are accessible offline.
-*   *Note: AI features require an active internet connection and a valid API key for the session.*
+*   *Note: AI features require an active internet connection and a valid API key for the session. The Service Worker functionality for advanced PWA features (like full offline asset caching post-build) needs to be integrated with a Vite-specific PWA plugin (e.g., `vite-plugin-pwa`) for optimal compatibility with the build process.*
 
 ## 🚀 Deployment
 
-AudioWrite is a static website and can be deployed to any static site hosting service.
+AudioWrite is built using Vite and deployed as a static website to GitHub Pages.
 
-### GitHub Pages Example:
+### GitHub Pages Deployment Steps (Summary):
 
-1.  Push your code to a GitHub repository.
-2.  Go to **Repository Settings > Pages**.
-3.  Under "Build and deployment":
-    *   **Source:** Select "Deploy from a branch".
-    *   **Branch:** Choose your main branch (e.g., `main`) and the `/(root)` folder.
-4.  Click **Save**.
-5.  Your site will be available at `https://YOUR_USERNAME.github.io/YOUR_REPOSITORY_NAME/`.
-6.  *Users of the deployed version will need to provide their own Gemini API Key.*
+1.  Push your code to your GitHub repository (`main` branch for source).
+2.  Ensure `vite.config.ts` has the correct `base` path (e.g., `/AudioWrite/`).
+3.  Ensure `package.json` has the correct `homepage` URL.
+4.  Run `npm run deploy`. This script builds the project and pushes the `dist` folder contents to the `gh-pages` branch.
+5.  Configure GitHub Pages (Settings > Pages) to deploy from the `gh-pages` branch.
+6.  Your site will be available at `https://hoomanick.github.io/AudioWrite/`.
+7.  *Users of the deployed version will need to provide their own Gemini API Key.*
 
 ## 🙌 Contributing
 
@@ -123,3 +132,4 @@ This project is licensed under the Apache License 2.0. See the `SPDX-License-Ide
 *   Created by Hooman Nick.
 *   Powered by the Google Gemini API.
 *   Uses Marked.js for Markdown rendering and Font Awesome for icons.
+*   Built with Vite.
