@@ -1,0 +1,1047 @@
+@import url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css);
+@import url(https://fonts.cdnfonts.com/css/sf-mono);
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg-dark: #121212;
+  --color-bg-alt-dark: #1E1E1E;
+  --color-surface-dark: rgba(255, 255, 255, 0.05);
+  --color-surface-hover-dark: rgba(255, 255, 255, 0.08);
+  --color-surface-active-dark: rgba(255, 255, 255, 0.12);
+  --color-text-dark: #E1E1E1;
+  --color-text-secondary-dark: #A8A8A8;
+  --color-text-tertiary-dark: #7F7F7F;
+  --color-accent-dark: #82aaff;
+  --color-accent-alt-dark: #c792ea;
+  --color-cursor-dark: var(--color-accent-dark);
+  --color-border-dark: rgba(255, 255, 255, 0.12);
+  --color-recording-dark: #ff453a;
+  --color-success-dark: #32d74b;
+  --color-danger-dark: #ff453a;
+  --color-warning-dark: #ffcc00;
+
+
+  --glass-bg-dark: rgba(30, 30, 30, 0.6);
+  --glass-border-dark: rgba(255, 255, 255, 0.15);
+  --glass-highlight-dark: rgba(255, 255, 255, 0.1);
+  --glass-shadow-dark: rgba(0, 0, 0, 0.3);
+
+  --glass-recording-bg-dark: rgba(28, 28, 30, 0.75);
+  --glass-recording-border-dark: rgba(255, 255, 255, 0.15);
+
+  --color-bg-light: #F7F7F7;
+  --color-bg-alt-light: #EDEDED;
+  --color-surface-light: #FFFFFF;
+  --color-surface-hover-light: #F0F0F0;
+  --color-surface-active-light: #EAEAEA;
+  --color-text-light: #333333;
+  --color-text-secondary-light: #666666;
+  --color-text-tertiary-light: #999999;
+  --color-accent-light: #007AFF;
+  --color-accent-alt-light: #5856d6;
+  --color-cursor-light: var(--color-accent-light);
+  --color-border-light: #DCDCDC;
+  --color-recording-light: #ff3b30;
+  --color-success-light: #30d158;
+  --color-danger-light: #ff3b30;
+  --color-warning-light: #ff9500;
+
+
+  --glass-bg-light: rgba(255, 255, 255, 0.65);
+  --glass-border-light: rgba(0, 0, 0, 0.07);
+  --glass-highlight-light: var(--color-surface-active-light);
+  --glass-shadow-light: rgba(0, 0, 0, 0.05);
+
+  --glass-recording-bg-light: rgba(248, 248, 248, 0.75);
+  --glass-recording-border-light: rgba(0, 0, 0, 0.1);
+
+  --color-bg: var(--color-bg-dark);
+  --color-bg-alt: var(--color-bg-alt-dark);
+  --color-surface: var(--color-surface-dark);
+  --color-surface-hover: var(--color-surface-hover-dark);
+  --color-surface-active: var(--color-surface-active-dark);
+  --color-text: var(--color-text-dark);
+  --color-text-secondary: var(--color-text-secondary-dark);
+  --color-text-tertiary: var(--color-text-tertiary-dark);
+  --color-accent: var(--color-accent-dark);
+  --color-accent-alt: var(--color-accent-alt-dark);
+  --color-cursor: var(--color-cursor-dark);
+  --color-border: var(--color-border-dark);
+  --color-recording: var(--color-recording-dark);
+  --color-success: var(--color-success-dark);
+  --color-danger: var(--color-danger-dark);
+  --color-warning: var(--color-warning-dark);
+  --glass-bg: var(--glass-bg-dark);
+  --glass-border: var(--glass-border-dark);
+  --glass-highlight: var(--glass-highlight-dark);
+  --glass-shadow: var(--glass-shadow-dark);
+  --glass-recording-bg: var(--glass-recording-bg-dark);
+  --glass-recording-border: var(--glass-recording-border-dark);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.45s ease;
+  --transition-tabs: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  --footer-height: 150px; /* Adjusted height for non-live recording interface to accommodate attribution */
+  --live-footer-height: 350px; /* Height of the live recording interface when fixed */
+}
+
+body.light-mode {
+  --color-bg: var(--color-bg-light);
+  --color-bg-alt: var(--color-bg-alt-light);
+  --color-surface: var(--color-surface-light);
+  --color-surface-hover: var(--color-surface-hover-light);
+  --color-surface-active: var(--color-surface-active-light);
+  --color-text: var(--color-text-light);
+  --color-text-secondary: var(--color-text-secondary-light);
+  --color-text-tertiary: var(--color-text-tertiary-light);
+  --color-accent: var(--color-accent-light);
+  --color-accent-alt: var(--color-accent-alt-light);
+  --color-cursor: var(--color-cursor-light);
+  --color-border: var(--color-border-light);
+  --color-recording: var(--color-recording-light);
+  --color-success: var(--color-success-light);
+  --color-danger: var(--color-danger-light);
+  --color-warning: var(--color-warning-light);
+  --glass-bg: var(--glass-bg-light);
+  --glass-border: var(--glass-border-light);
+  --glass-highlight: var(--glass-highlight-light);
+  --glass-shadow: var(--glass-shadow-light);
+  --glass-recording-bg: var(--glass-recording-bg-light);
+  --glass-recording-border: var(--glass-recording-border-light);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0,0,0,0.03);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0,0,0,0.05);
+}
+
+[contenteditable] {
+  caret-color: var(--color-cursor);
+}
+[contenteditable][placeholder].placeholder-active {
+  color: var(--color-text-tertiary);
+  opacity: 0.8;
+}
+
+html {
+  height: 100%;
+  overflow: hidden; /* Prevent global scrollbars, app is self-contained */
+}
+
+body {
+  font-family: var(--font-primary);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.65;
+  height: 100vh; /* Fixed viewport height */
+  overflow: hidden; /* Prevent body scrollbars */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+  margin: 0;
+  touch-action: manipulation; /* Enhance touch responsiveness on mobile */
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Fill body */
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden; /* Ensure app container doesn't scroll */
+  position: relative; /* For positioning context of focus-prompt-overlay */
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* For z-index context of children and :has selector behavior */
+  overflow: hidden; /* Important: This clips its content if it would overflow */
+  transition: padding-bottom var(--transition-slow) ease-in-out; /* Smoothly adjust padding for fixed panel */
+}
+
+/* When .is-live is a direct child of .main-content, add padding to .main-content */
+.main-content:has(> .recording-interface.is-live) {
+  padding-bottom: var(--live-footer-height);
+}
+
+.note-area {
+  flex: 1; /* Takes available space within main-content */
+  overflow: hidden; /* For its own content scroll (note-content-wrapper) */
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  padding: 24px 0 0; /* Adjusted padding */
+  transition: background-color var(--transition-normal), filter var(--transition-normal);
+  min-height: 0; /* Allows this flex item to shrink below its content size if needed */
+}
+
+.note-header {
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  gap: 12px; /* Space between elements */
+  padding: 0 40px 16px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 12px;
+  transition: border-color var(--transition-normal);
+}
+
+.title-and-meta {
+    width: 100%;
+}
+
+.editor-title {
+  font-size: 22px;
+  font-weight: 600;
+  outline: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 4px 0;
+  color: var(--color-text);
+  font-family: var(--font-primary);
+  background-color: transparent;
+  width: 100%;
+}
+
+.current-note-timestamp {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    margin-bottom: 8px;
+}
+
+.header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 16px; /* Space between language selector and tabs */
+}
+
+.language-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+#outputLanguageSelect {
+    background-color: var(--glass-bg);
+    color: var(--color-text);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: var(--font-primary);
+    outline: none;
+    min-width: 150px;
+}
+#outputLanguageSelect:focus {
+    border-color: var(--color-accent);
+}
+
+
+.tab-navigation-container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 4px;
+  display: inline-flex;
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+.tab-navigation {
+  display: flex;
+  position: relative;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.tab-button {
+  background: transparent;
+  border: none;
+  padding: 6px 16px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  font-family: var(--font-primary);
+  letter-spacing: -0.01em;
+}
+
+.tab-button:hover {
+  color: var(--color-text);
+}
+
+.tab-button.active {
+  color: var(--color-text);
+}
+
+body.light-mode .tab-button {
+    color: var(--color-text-secondary);
+}
+body.light-mode .tab-button:hover {
+    color: var(--color-text);
+}
+body.light-mode .tab-button.active {
+  color: var(--color-text);
+}
+
+.active-tab-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background-color: var(--glass-highlight);
+  border-radius: 6px;
+  transition: left var(--transition-tabs), width var(--transition-tabs);
+  z-index: 0;
+  box-shadow: 0 0.5px 1.5px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.02) inset;
+}
+
+body.light-mode .active-tab-indicator {
+  box-shadow: 0 0.5px 1.5px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.03) inset;
+}
+
+.custom-prompt-section {
+    width: 100%;
+    margin-top: 8px; /* Space above toggle button */
+}
+
+.custom-prompt-toggle {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-primary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+.custom-prompt-toggle:hover {
+    color: var(--color-text);
+    background-color: var(--color-surface);
+}
+.custom-prompt-toggle i {
+    margin-right: 6px;
+}
+
+.custom-prompt-container {
+    margin-top: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden; /* Ensures textarea respects border-radius */
+}
+.custom-prompt-container.hidden {
+    display: none;
+}
+
+#customPromptTextarea {
+    width: 100%;
+    min-height: 80px;
+    background-color: var(--color-bg-alt);
+    color: var(--color-text);
+    border: none;
+    padding: 12px;
+    font-family: var(--font-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+body.light-mode #customPromptTextarea {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.note-content-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 40px 40px;
+  position: relative;
+  min-height: 0;
+}
+
+.note-content {
+  outline: none;
+  min-height: 100px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-text);
+  padding: 12px 0;
+  font-family: var(--font-primary);
+  letter-spacing: -0.01em;
+
+  opacity: 0;
+  transform: scale(0.985) translateY(8px);
+  transition: opacity var(--transition-tabs), transform var(--transition-tabs);
+  display: none;
+  will-change: opacity, transform;
+}
+
+.note-content.active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  display: block;
+}
+
+.note-content h1, .note-content h2, .note-content h3 { margin-bottom: 0.75em; margin-top: 1.25em; font-weight: 600; color: var(--color-text); }
+.note-content h1 { font-size: 1.8em; }
+.note-content h2 { font-size: 1.5em; }
+.note-content h3 { font-size: 1.25em; }
+.note-content p { margin-bottom: 1em; }
+.note-content ul, .note-content ol { margin-bottom: 1em; padding-left: 1.5em; }
+.note-content li { margin-bottom: 0.5em; }
+.note-content pre { background-color: var(--color-bg-alt); padding: 1em; border-radius: 8px; margin-bottom: 1em; font-size: 0.9em; overflow-x: auto; transition: background-color var(--transition-normal); font-family: var(--font-mono); }
+.note-content code { font-family: var(--font-mono); background-color: var(--color-bg-alt); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em;}
+.note-content pre code { background-color: transparent; padding: 0; border-radius: 0;}
+
+
+.recording-interface {
+  /* Default state: part of the flex flow in main-content */
+  height: var(--footer-height);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px 5px; /* Adjusted padding to accommodate attribution */
+  background-color: transparent;
+  border-top: 1px solid transparent;
+  flex-shrink: 0; /* Don't shrink this element in flex layout */
+  /* Transition properties for when it becomes .is-live (fixed) */
+  transition: opacity 0.3s ease-out, transform 0.35s ease-out,
+              background-color var(--transition-slow) ease-in-out, /* For bg change */
+              height var(--transition-slow) ease-in-out; /* If height changes for fixed */
+  z-index: 10; /* Base z-index, lower than live state */
+}
+
+.recording-interface.is-live {
+  position: fixed; /* Take out of flow, overlay */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--live-footer-height); /* Explicit height for the fixed panel */
+  z-index: 1000; /* High z-index to be on top */
+
+  /* Visuals for live state */
+  background-color: var(--glass-recording-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--glass-recording-border);
+  box-shadow: 0 -4px 20px var(--glass-shadow);
+
+  /* Internal layout */
+  justify-content: flex-start; /* Align live content to top */
+  padding-top: 20px; /* Internal padding from top of the fixed panel */
+  padding-bottom: 20px; /* Internal padding from bottom of the fixed panel - CRITICAL for button */
+}
+
+.status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); } /* Reduced margin */
+/* When live, the status indicator related to non-live state is hidden */
+.recording-interface.is-live .status-indicator { display: none; }
+.status-text { font-size: 14px; color: var(--color-text-tertiary); text-align: center; transition: color var(--transition-normal); font-family: var(--font-primary); }
+.status-text.warning { color: var(--color-warning); }
+.status-text.error { color: var(--color-danger); }
+.status-text.success { color: var(--color-success); }
+
+
+/* Elements specific to the live recording view */
+.live-recording-title,
+#liveWaveformCanvas,
+.live-recording-timer {
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity 0.3s ease-out 0.1s, transform 0.35s ease-out 0.1s;
+}
+
+.recording-interface.is-live .live-recording-title,
+.recording-interface.is-live #liveWaveformCanvas,
+.recording-interface.is-live .live-recording-timer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.live-recording-title {
+  font-size: 17px;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 500;
+  font-family: var(--font-primary);
+}
+
+#liveWaveformCanvas {
+  width: 100%;
+  max-width: 340px;
+  height: 70px;
+  margin-bottom: 18px;
+  border-radius: 4px;
+}
+
+.live-recording-timer {
+  font-family: var(--font-mono);
+  font-size: 44px;
+  font-weight: 400;
+  color: var(--color-text);
+  margin-bottom: 22px;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.recording-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px; /* Adjusted gap for more buttons */
+  position: relative;
+  margin-bottom: 8px; /* Space for attribution below */
+}
+
+.action-button {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary); font-size: 18px;
+  cursor: pointer;
+  transition: var(--transition-fast) background-color, var(--transition-fast) color, var(--transition-fast) border-color, var(--transition-fast) transform, var(--transition-fast) box-shadow, filter var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+/* Action buttons are hidden when recording is live and panel is an overlay */
+.recording-interface.is-live .action-button:not(#recordButton):not(#settingsButton) { display: none; }
+/* Keep settings button visible in live mode if desired, adjust its position/styling if needed */
+.recording-interface.is-live #settingsButton {
+  /* Example: position it differently or ensure it stays if it's global */
+  /* For now, it will be hidden by the rule above unless we specifically exclude it */
+   display: none; /* Hide by default in live mode to simplify footer */
+}
+
+
+.action-button:hover { color: var(--color-text); transform: translateY(-2px) scale(1.05); box-shadow: var(--shadow-md); background-color: var(--color-surface-hover); border-color: var(--glass-highlight); }
+.action-button#archiveButton i { font-size: 17px; } /* Slightly smaller archive icon if needed */
+.action-button#settingsButton i { font-size: 18px; }
+
+
+.record-button {
+  position: relative; width: 72px; height: 72px; border-radius: 50%; border: none; outline: none; background: none; cursor: pointer; z-index: 1;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), filter var(--transition-normal);
+}
+.record-button-inner {
+  position: relative; width: 100%; height: 100%; border-radius: 50%;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text); font-size: 24px; z-index: 2; box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+}
+.record-button:hover .record-button-inner { transform: scale(1.08); background-color: var(--color-surface-hover); border-color: var(--glass-highlight); }
+.record-button.recording .record-button-inner { background-color: var(--color-recording); border: 1px solid transparent; color: white; }
+body.light-mode .record-button.recording .record-button-inner { color: white; }
+.record-button.recording:hover .record-button-inner {
+    background-color: var(--color-recording);
+    filter: brightness(0.9);
+}
+.record-button:disabled .record-button-inner {
+    background-color: var(--color-surface);
+    color: var(--color-text-tertiary);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.record-button:disabled:hover .record-button-inner {
+    transform: none;
+    box-shadow: var(--shadow-md); /* Keep original shadow */
+}
+
+.record-button.record-button-ready-glow:not(.recording):not(:disabled) .record-button-inner {
+  animation: pulse-glow 2.5s infinite ease-in-out;
+  /* Make the ready glow slightly different if desired, e.g., less intense shadow or specific color variant */
+  /* For now, it reuses the pulse-glow as defined */
+}
+
+
+/* Ensure record button icon changes work in fixed panel */
+.recording-interface.is-live .record-button.recording .record-button-inner i.fa-stop { display: inline-block; font-size: 20px; }
+.recording-interface.is-live .record-button.recording .record-button-inner i.fa-microphone { display: none; }
+
+.record-waves { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; z-index: 1; opacity: 0; transition: opacity var(--transition-normal); pointer-events: none; }
+.record-button.recording .record-waves { opacity: 1; }
+/* Hide waves when the panel is the fixed overlay */
+.recording-interface.is-live .record-waves { display: none; }
+.wave { fill: none; stroke: var(--color-recording); stroke-width: 1.5px; opacity: 0; transform-origin: center; }
+.record-button.recording .wave1 { animation: wave 2s infinite ease-out; }
+.record-button.recording .wave2 { animation: wave 2s infinite ease-out; animation-delay: 0.4s; }
+.record-button.recording .wave3 { animation: wave 2s infinite ease-out; animation-delay: 0.8s; }
+@keyframes wave { 0% { transform: scale(0.4); opacity: 0.8; stroke-width: 2px; } 100% { transform: scale(1.8); opacity: 0; stroke-width: 0.5px; } }
+
+.app-attribution {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  width: 100%;
+  padding: 4px 0; /* Small padding top and bottom */
+}
+
+.recording-interface.is-live .app-attribution {
+  font-size: 10px;
+  padding-top: 6px; /* A bit more space from record button area in live mode */
+  padding-bottom: 2px; /* Ensure it's not too close to the edge */
+}
+
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+.modal:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease;
+}
+.modal-content {
+  background-color: var(--color-bg-alt);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+.modal:not(.hidden) .modal-content {
+    transform: scale(1);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.close-button {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.close-button:hover {
+  color: var(--color-text);
+}
+
+.archive-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin: -8px; /* Counteract item padding */
+  padding: 8px;
+}
+
+.archive-item {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+.archive-item:last-child {
+    margin-bottom: 0;
+}
+.archive-item:hover {
+    background-color: var(--color-surface-hover);
+    border-color: var(--glass-highlight);
+}
+.archive-item.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.archive-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.archive-item-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text);
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px;
+}
+.archive-item-timestamp {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.archive-item-content {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+.archive-item-content strong {
+    color: var(--color-text);
+    font-weight: 500;
+}
+.archive-item-content p {
+    margin-bottom: 4px;
+    max-height: 60px; /* Limit height of snippets */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Show 3 lines max */
+    -webkit-box-orient: vertical;
+}
+
+
+.archive-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.archive-item-actions .action-button-small {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition-fast) all;
+}
+.archive-item-actions .action-button-small:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--glass-highlight);
+  transform: translateY(-1px);
+}
+.archive-item-actions .action-button-small.danger {
+    color: var(--color-danger);
+}
+.archive-item-actions .action-button-small.danger:hover:not(:disabled) {
+    background-color: var(--color-danger);
+    color: white;
+    border-color: transparent;
+}
+.archive-item-actions .action-button-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.archive-item-actions select {
+    background-color: var(--glass-bg);
+    color: var(--color-text);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    outline: none;
+}
+.archive-item-actions select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* Settings Modal Specific Styles */
+.settings-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 8px;
+}
+.settings-modal-body label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+#apiKeyInput {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: var(--font-primary);
+    outline: none;
+}
+#apiKeyInput:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-accent-dark);
+}
+body.light-mode #apiKeyInput:focus {
+    box-shadow: 0 0 0 2px var(--color-accent-light);
+}
+
+.action-button-primary {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+.action-button-primary:hover {
+    filter: brightness(1.1);
+}
+body.light-mode .action-button-primary {
+    color: white; /* Ensure contrast */
+}
+
+.api-key-info {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    line-height: 1.4;
+    margin-top: 4px;
+}
+.api-key-status {
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: 500;
+}
+.api-key-status.success {
+    color: var(--color-success);
+}
+.api-key-status.error {
+    color: var(--color-danger);
+}
+.api-key-status.warning {
+    color: var(--color-warning);
+}
+
+.api-key-instructions {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+.api-key-instructions h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+.api-key-instructions ol {
+    list-style-position: inside;
+    padding-left: 5px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+.api-key-instructions ol li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+.api-key-instructions ol li a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+.api-key-instructions ol li a:hover {
+    text-decoration: underline;
+}
+
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg-alt); border-radius: 5px; }
+::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--glass-highlight); }
+
+.hidden { display: none !important; }
+
+/* Keyframe animation for pulsing glow */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 15px 0px var(--color-accent-glow-start, var(--color-accent));
+  }
+  50% {
+    box-shadow: 0 0 30px 10px var(--color-accent-glow-end, var(--color-accent));
+  }
+  100% {
+    box-shadow: 0 0 15px 0px var(--color-accent-glow-start, var(--color-accent));
+  }
+}
+
+body.light-mode {
+  --color-accent-glow-start: rgba(0, 122, 255, 0.6); /* Light mode accent with opacity */
+  --color-accent-glow-end: rgba(0, 122, 255, 0.8);
+}
+body:not(.light-mode) {
+  --color-accent-glow-start: rgba(130, 170, 255, 0.5); /* Dark mode accent with opacity */
+  --color-accent-glow-end: rgba(130, 170, 255, 0.7);
+}
+
+
+/* Focus Mode Styles */
+.app-container.app-focus-mode > .main-content > .note-area {
+  filter: blur(4px);
+  pointer-events: none; /* Prevent interaction with blurred area */
+}
+.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > .action-button:not(#recordButton):not(#settingsButton) {
+  filter: blur(4px);
+  pointer-events: none;
+}
+.app-container.app-focus-mode > .main-content > .recording-interface > .status-indicator {
+  filter: blur(4px);
+}
+
+/* Ensure record button itself is not blurred and is prominent when enabled in focus mode*/
+.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > .record-button:not(:disabled) {
+  filter: none !important;
+  transform: scale(1.12); /* Make it slightly larger in focus mode */
+  z-index: 1001; /* Ensure it's above blurred items and focus overlay text */
+  animation: pulse-glow 2.5s infinite ease-in-out;
+}
+
+/* Ensure settings (key) button is not blurred and is prominent in focus mode */
+.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton {
+  filter: none !important; 
+  pointer-events: auto !important; 
+  z-index: 1001; 
+  transform: scale(1.1); 
+  /* Glow animation is now conditional via .settings-needs-glow class */
+}
+
+.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton.settings-needs-glow {
+  animation: pulse-glow 2.5s infinite ease-in-out;
+}
+
+
+.focus-prompt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--footer-height); /* Default, adjust if live interface is up */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  z-index: 50; /* Above blurred content, below record button */
+  pointer-events: none; /* Click through to elements behind if any */
+  opacity: 0;
+  transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out;
+  padding: 20px; /* Ensure text doesn't touch edges */
+}
+
+.app-container.app-focus-mode .focus-prompt-overlay {
+  opacity: 1;
+}
+/* Adjust bottom position if live recording interface is active */
+.app-container.app-is-live-recording.app-focus-mode .focus-prompt-overlay {
+    bottom: var(--live-footer-height);
+}
+
+.focus-prompt-text {
+  font-size: 26px;
+  font-weight: bold;
+  font-style: italic;
+  color: var(--color-text);
+  background: var(--glass-bg); /* Slight backing for readability */
+  backdrop-filter: blur(5px); /* Blur its own background slightly for more pop */
+  -webkit-backdrop-filter: blur(5px);
+  padding: 20px 35px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+  max-width: 500px; /* Control width of the text box */
+  pointer-events: auto; /* If any interaction was needed with the text itself */
+}
+
+
+@media (max-width: 768px) {
+  .note-area { padding: 20px 0 0; }
+  .note-header { padding: 0 20px 12px; } /* Keep column layout from base .note-header */
+  .header-controls { flex-direction: column; align-items: stretch; gap: 12px; }
+  .language-selector-container { justify-content: space-between; }
+  #outputLanguageSelect { width: 100%; }
+  .editor-title { font-size: 20px; text-align: left; }
+  .tab-navigation-container { width: 100%; }
+  .tab-navigation { width: 100%; }
+  .tab-button { flex-grow: 1; text-align: center; }
+  .note-content-wrapper { padding: 0 20px 20px; }
+  .recording-interface.is-live { padding-left: 15px; padding-right: 15px; } /* Keep existing responsive padding */
+  #liveWaveformCanvas { max-width: calc(100% - 30px); height: 60px; }
+  .live-recording-timer { font-size: 36px; }
+  .action-button { width: 44px; height: 44px; font-size: 16px; }
+  .recording-controls { gap: 8px; /* Tighter gap on mobile */ }
+  .record-button { width: 64px; height: 64px; }
+  .modal-content { width: 95%; padding: 16px; max-height: 90vh;}
+  .modal-header h2 { font-size: 18px; }
+  .archive-item-actions { flex-direction: column; align-items: stretch; }
+  .archive-item-actions select, .archive-item-actions .action-button-small { width: 100%; text-align: center;}
+
+  .app-attribution {
+    font-size: 10px;
+    padding: 2px 0;
+  }
+  .recording-interface.is-live .app-attribution {
+    font-size: 9px;
+    padding-top: 4px;
+  }
+
+
+  .focus-prompt-text {
+    font-size: 20px;
+    padding: 15px 25px;
+    max-width: 90%;
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "AudioWrite",
+  "description": "AudioWrite: Effortless dictation powered by Gemini. Turn long rambling recordings into perfectly transcribed notes.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}

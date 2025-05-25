@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AudioWrite</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1E1E1E">
+
+    <!-- Apple Specific PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AudioWrite">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"> <!-- 180x180 recommended -->
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167x167.png"> <!-- iPad Pro -->
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120x120.png"> <!-- iPhone Retina -->
+
+
+    <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^0.8.0",
+    "marked": "https://esm.sh/marked@^4.0.0",
+    "path": "https://esm.sh/path@^0.12.7",
+    "vite": "https://esm.sh/vite@^6.3.5"
+  }
+}
+</script>
+  </head>
+  <body>
+    <div class="app-container">
+      <div id="focusPromptOverlay" class="focus-prompt-overlay hidden">
+        <span class="focus-prompt-text">Let's AudioWrite what's in your mind!</span>
+      </div>
+      <div class="main-content">
+        <div class="note-area">
+          <div class="note-header">
+            <div class="title-and-meta">
+                <div class="editor-title" contenteditable="true" placeholder="Untitled Note">
+                  Untitled Note
+                </div>
+                <div id="currentNoteTimestamp" class="current-note-timestamp"></div>
+            </div>
+            <div class="header-controls">
+              <div class="language-selector-container">
+                <label for="outputLanguageSelect">Output Language:</label>
+                <select id="outputLanguageSelect"></select>
+              </div>
+              <div class="tab-navigation-container">
+                <div class="tab-navigation">
+                  <button class="tab-button active" data-tab="note">Polished</button>
+                  <button class="tab-button" data-tab="raw">Raw</button>
+                  <div class="active-tab-indicator"></div>
+                </div>
+              </div>
+            </div>
+             <div class="custom-prompt-section">
+                <button id="toggleCustomPromptButton" class="custom-prompt-toggle" title="Toggle Custom Prompt">
+                    <i class="fas fa-wand-magic-sparkles"></i> Custom Prompt
+                </button>
+                <div id="customPromptContainer" class="custom-prompt-container hidden">
+                    <textarea id="customPromptTextarea" placeholder="Enter custom polishing instructions here (e.g., summarize in 3 bullet points, adopt a formal tone...). If empty, default polishing will be used."></textarea>
+                </div>
+            </div>
+          </div>
+
+          <div class="note-content-wrapper">
+            <div
+              id="polishedNote"
+              class="note-content active"
+              contenteditable="true"
+              placeholder="Your polished notes will appear here..."
+            ></div>
+            <div
+              id="rawTranscription"
+              class="note-content"
+              contenteditable="true"
+              placeholder="Raw transcription will appear here..."
+            ></div>
+          </div>
+        </div>
+
+        <div class="recording-interface">
+          <div id="liveRecordingTitle" class="live-recording-title" style="display: none">
+            Recording
+          </div>
+          <canvas id="liveWaveformCanvas" style="display: none"></canvas>
+          <div id="liveRecordingTimerDisplay" class="live-recording-timer" style="display: none">
+            00:00.00
+          </div>
+
+          <div class="status-indicator">
+            <span id="recordingStatus" class="status-text">Ready to record</span>
+          </div>
+
+          <div class="recording-controls">
+             <button class="action-button" id="archiveButton" title="Notes Archive">
+              <i class="fas fa-archive"></i>
+            </button>
+            <button class="action-button" id="themeToggleButton" title="Toggle Theme">
+              <i class="fas fa-sun"></i>
+            </button>
+
+            <button id="recordButton" class="record-button" title="Start/Stop Recording">
+              <div class="record-button-inner">
+                <i class="fas fa-microphone"></i>
+              </div>
+              <svg class="record-waves" viewBox="0 0 200 200">
+                <circle class="wave wave1" cx="100" cy="100" r="40" />
+                <circle class="wave wave2" cx="100" cy="100" r="70" />
+                <circle class="wave wave3" cx="100" cy="100" r="100" />
+              </svg>
+            </button>
+
+            <button class="action-button" id="settingsButton" title="API Key Settings">
+                <i class="fas fa-key"></i>
+            </button>
+            <button class="action-button" id="newButton" title="New Note">
+              <i class="fas fa-file"></i>
+            </button>
+          </div>
+          <div class="app-attribution">Created by Hooman Nick © 2025</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="archiveModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Notes Archive</h2>
+          <button id="closeArchiveModalButton" class="close-button" title="Close Archive">&times;</button>
+        </div>
+        <div id="archiveListContainer" class="archive-list">
+          <!-- Archived notes will be listed here -->
+        </div>
+      </div>
+    </div>
+
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API Key Settings</h2>
+                <button id="closeSettingsModalButton" class="close-button" title="Close Settings">&times;</button>
+            </div>
+            <div class="settings-modal-body">
+                <label for="apiKeyInput">Gemini API Key:</label>
+                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API Key">
+                <button id="saveApiKeyButton" class="action-button-primary">Save & Apply Key</button>
+                <p class="api-key-info">Your API Key is stored in session storage and will be cleared when you close this browser tab/window. It is not saved permanently or logged.</p>
+                <p id="apiKeyStatus" class="api-key-status"></p>
+                <div class="api-key-instructions">
+                    <h3>How to get your API key:</h3>
+                    <ol>
+                        <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
+                        <li>Sign in with your Google account.</li>
+                        <li>Click "Create API Key" (you might need to create a project first).</li>
+                        <li>Copy the generated key and paste it into the field above.</li>
+                    </ol>
+                    <p class="api-key-info">Make sure to keep your API key secure and do not share it publicly.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const tabNav = document.querySelector(".tab-navigation");
+        const tabButtons = tabNav.querySelectorAll(".tab-button");
+        const activeTabIndicator = tabNav.querySelector(".active-tab-indicator");
+        const noteContents = document.querySelectorAll(".note-content");
+
+        function setActiveTab(activeButton, skipAnimation = false) {
+          if (!activeButton || !activeTabIndicator) return;
+
+          tabButtons.forEach((btn) => btn.classList.remove("active"));
+          activeButton.classList.add("active");
+
+          const tabName = activeButton.getAttribute("data-tab");
+          noteContents.forEach((content) => content.classList.remove("active"));
+
+          if (tabName === "raw") {
+            document.getElementById("rawTranscription").classList.add("active");
+          } else {
+            document.getElementById("polishedNote").classList.add("active");
+          }
+
+          const originalTransition = activeTabIndicator.style.transition;
+          if (skipAnimation) {
+            activeTabIndicator.style.transition = "none";
+          } else {
+            activeTabIndicator.style.transition = "";
+          }
+
+          activeTabIndicator.style.left = `${activeButton.offsetLeft}px`;
+          activeTabIndicator.style.width = `${activeButton.offsetWidth}px`;
+
+          if (skipAnimation) {
+            activeTabIndicator.offsetHeight; // Trigger reflow
+            activeTabIndicator.style.transition = originalTransition;
+          }
+        }
+
+        tabButtons.forEach((button) => {
+          button.addEventListener("click", (e) => {
+            setActiveTab(e.currentTarget);
+          });
+        });
+
+        const initiallyActiveButton = tabNav.querySelector(".tab-button.active");
+        if (initiallyActiveButton) {
+          requestAnimationFrame(() => {
+            setActiveTab(initiallyActiveButton, true);
+          });
+        }
+
+        window.addEventListener("resize", () => {
+          requestAnimationFrame(() => {
+            const currentActiveButton = tabNav.querySelector(".tab-button.active");
+            if (currentActiveButton) {
+              setActiveTab(currentActiveButton, true);
+            }
+          });
+        });
+      });
+    </script>
+    <!--
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(err => {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+    -->
+    <script type="module" src="index.tsx"></script>
+  </body>
+</html><link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script><link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script>
