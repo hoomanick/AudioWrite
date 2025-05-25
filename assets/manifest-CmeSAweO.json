@@ -16,9 +16,9 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "./index.html",
+  "start_url": "/AudioWrite/",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#1E1E1E",
-  "scope": "./"
+  "scope": "/AudioWrite/"
 }
