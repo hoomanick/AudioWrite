@@ -94,8 +94,8 @@
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  --footer-height: 150px; /* Adjusted height for non-live recording interface to accommodate attribution */
-  --live-footer-height: 350px; /* Height of the live recording interface when fixed */
+  --footer-height: 130px; /* WAS 150px. Adjusted height for non-live recording interface */
+  --live-footer-height: 280px; /* WAS 350px. Height of the live recording interface when fixed */
 }
 
 body.light-mode {
@@ -469,48 +469,43 @@ body.light-mode #customPromptTextarea {
 
 
 .recording-interface {
-  /* Default state: part of the flex flow in main-content */
   height: var(--footer-height);
   width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px 20px 5px; /* Adjusted padding to accommodate attribution */
+  padding: 10px 20px 10px; /* WAS 10px 20px 5px. Adjusted padding */
   background-color: transparent;
   border-top: 1px solid transparent;
-  flex-shrink: 0; /* Don't shrink this element in flex layout */
-  /* Transition properties for when it becomes .is-live (fixed) */
+  flex-shrink: 0;
   transition: opacity 0.3s ease-out, transform 0.35s ease-out,
-              background-color var(--transition-slow) ease-in-out, /* For bg change */
-              height var(--transition-slow) ease-in-out, /* If height changes for fixed */
-              padding-bottom var(--transition-normal); /* Transition for safe area padding */
-  z-index: 10; /* Base z-index, lower than live state */
+              background-color var(--transition-slow) ease-in-out,
+              height var(--transition-slow) ease-in-out,
+              padding-bottom var(--transition-normal);
+  z-index: 10;
 }
 
 .recording-interface.is-live {
-  position: fixed; /* Take out of flow, overlay */
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--live-footer-height); /* Explicit height for the fixed panel */
-  z-index: 1000; /* High z-index to be on top */
+  height: var(--live-footer-height);
+  z-index: 1000;
 
-  /* Visuals for live state */
   background-color: var(--glass-recording-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--glass-recording-border);
   box-shadow: 0 -4px 20px var(--glass-shadow);
 
-  /* Internal layout */
-  justify-content: flex-start; /* Align live content to top */
-  padding-top: 20px; /* Internal padding from top of the fixed panel */
-  padding-bottom: 20px; /* Internal padding from bottom of the fixed panel - CRITICAL for button */
+  justify-content: flex-start;
+  padding-top: 15px; /* WAS 20px */
+  padding-bottom: 15px; /* WAS 20px */
 }
 
-.status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); } /* Reduced margin */
-/* When live, the status indicator related to non-live state is hidden */
+.status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); }
 .recording-interface.is-live .status-indicator { display: none; }
 .status-text { font-size: 14px; color: var(--color-text-tertiary); text-align: center; transition: color var(--transition-normal); font-family: var(--font-primary); }
 .status-text.warning { color: var(--color-warning); }
@@ -518,7 +513,6 @@ body.light-mode #customPromptTextarea {
 .status-text.success { color: var(--color-success); }
 
 
-/* Elements specific to the live recording view */
 .live-recording-title,
 #liveWaveformCanvas,
 .live-recording-timer {
@@ -537,7 +531,7 @@ body.light-mode #customPromptTextarea {
 .live-recording-title {
   font-size: 17px;
   color: var(--color-text);
-  margin-bottom: 12px;
+  margin-bottom: 12px; /* Default margin, overridden in mobile */
   text-align: center;
   font-weight: 500;
   font-family: var(--font-primary);
@@ -545,18 +539,18 @@ body.light-mode #customPromptTextarea {
 
 #liveWaveformCanvas {
   width: 100%;
-  max-width: 340px;
-  height: 70px;
-  margin-bottom: 18px;
+  max-width: 340px; /* Default max-width */
+  height: 70px; /* Default height, overridden in mobile */
+  margin-bottom: 18px; /* Default margin, overridden in mobile */
   border-radius: 4px;
 }
 
 .live-recording-timer {
   font-family: var(--font-mono);
-  font-size: 44px;
+  font-size: 44px; /* Default font size, overridden in mobile */
   font-weight: 400;
   color: var(--color-text);
-  margin-bottom: 22px;
+  margin-bottom: 22px; /* Default margin, overridden in mobile */
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -565,9 +559,9 @@ body.light-mode #customPromptTextarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px; /* Adjusted gap for more buttons */
+  gap: 12px;
   position: relative;
-  margin-bottom: 8px; /* Space for attribution below */
+  margin-bottom: 8px;
 }
 
 .action-button {
@@ -580,18 +574,14 @@ body.light-mode #customPromptTextarea {
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-/* Action buttons are hidden when recording is live and panel is an overlay */
 .recording-interface.is-live .action-button:not(#recordButton):not(#settingsButton) { display: none; }
-/* Keep settings button visible in live mode if desired, adjust its position/styling if needed */
 .recording-interface.is-live #settingsButton {
-  /* Example: position it differently or ensure it stays if it's global */
-  /* For now, it will be hidden by the rule above unless we specifically exclude it */
-   display: none; /* Hide by default in live mode to simplify footer */
+   display: none;
 }
 
 
 .action-button:hover { color: var(--color-text); transform: translateY(-2px) scale(1.05); box-shadow: var(--shadow-md); background-color: var(--color-surface-hover); border-color: var(--glass-highlight); }
-.action-button#archiveButton i { font-size: 17px; } /* Slightly smaller archive icon if needed */
+.action-button#archiveButton i { font-size: 17px; }
 .action-button#settingsButton i { font-size: 18px; }
 
 
@@ -623,23 +613,19 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 .record-button:disabled:hover .record-button-inner {
     transform: none;
-    box-shadow: var(--shadow-md); /* Keep original shadow */
+    box-shadow: var(--shadow-md);
 }
 
 .record-button.record-button-ready-glow:not(.recording):not(:disabled) .record-button-inner {
   animation: pulse-glow 2.5s infinite ease-in-out;
-  /* Make the ready glow slightly different if desired, e.g., less intense shadow or specific color variant */
-  /* For now, it reuses the pulse-glow as defined */
 }
 
 
-/* Ensure record button icon changes work in fixed panel */
 .recording-interface.is-live .record-button.recording .record-button-inner i.fa-stop { display: inline-block; font-size: 20px; }
 .recording-interface.is-live .record-button.recording .record-button-inner i.fa-microphone { display: none; }
 
 .record-waves { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; z-index: 1; opacity: 0; transition: opacity var(--transition-normal); pointer-events: none; }
 .record-button.recording .record-waves { opacity: 1; }
-/* Hide waves when the panel is the fixed overlay */
 .recording-interface.is-live .record-waves { display: none; }
 .wave { fill: none; stroke: var(--color-recording); stroke-width: 1.5px; opacity: 0; transform-origin: center; }
 .record-button.recording .wave1 { animation: wave 2s infinite ease-out; }
@@ -652,14 +638,14 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   color: var(--color-text-tertiary);
   text-align: center;
   width: 100%;
-  padding: 4px 0; /* Small padding top and bottom */
-  transition: padding-bottom var(--transition-normal); /* Transition for safe area padding */
+  padding: 4px 0;
+  transition: padding-bottom var(--transition-normal);
 }
 
 .recording-interface.is-live .app-attribution {
   font-size: 10px;
-  padding-top: 6px; /* A bit more space from record button area in live mode */
-  padding-bottom: 2px; /* Ensure it's not too close to the edge */
+  padding-top: 6px;
+  padding-bottom: 2px;
 }
 
 
@@ -732,7 +718,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 .archive-list {
   flex-grow: 1;
   overflow-y: auto;
-  margin: -8px; /* Counteract item padding */
+  margin: -8px;
   padding: 8px;
 }
 
@@ -789,11 +775,11 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 .archive-item-content p {
     margin-bottom: 4px;
-    max-height: 60px; /* Limit height of snippets */
+    max-height: 60px;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 3; /* Show 3 lines max */
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
 }
 
@@ -851,7 +837,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 .settings-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Increased gap between sections */
+    gap: 20px;
     padding-top: 8px;
 }
 
@@ -885,7 +871,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 
 #apiKeyInput {
     width: 100%;
-    background-color: var(--color-bg-alt); /* Differentiated background */
+    background-color: var(--color-bg-alt);
     color: var(--color-text);
     border: 1px solid var(--color-border);
     border-radius: 6px;
@@ -913,15 +899,15 @@ body.light-mode #apiKeyInput:focus {
     font-weight: 500;
     cursor: pointer;
     transition: background-color var(--transition-fast);
-    display: block; /* Make it block to take full width or adjust as needed */
-    width: 100%; /* Full width within its section */
+    display: block;
+    width: 100%;
     text-align: center;
 }
 .action-button-primary:hover {
     filter: brightness(1.1);
 }
 body.light-mode .action-button-primary {
-    color: white; /* Ensure contrast */
+    color: white;
 }
 
 .api-key-info {
@@ -950,7 +936,7 @@ body.light-mode .action-button-primary {
     padding-top: 12px;
     border-top: 1px solid var(--color-border);
 }
-.api-key-instructions h4 { /* Changed to h4 for better hierarchy */
+.api-key-instructions h4 {
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text);
@@ -991,7 +977,6 @@ body.light-mode .action-button-primary {
 
 .hidden { display: none !important; }
 
-/* Keyframe animation for pulsing glow */
 @keyframes pulse-glow {
   0% {
     box-shadow: 0 0 15px 0px var(--color-accent-glow-start, var(--color-accent));
@@ -1005,11 +990,11 @@ body.light-mode .action-button-primary {
 }
 
 body.light-mode {
-  --color-accent-glow-start: rgba(0, 122, 255, 0.6); /* Light mode accent with opacity */
+  --color-accent-glow-start: rgba(0, 122, 255, 0.6);
   --color-accent-glow-end: rgba(0, 122, 255, 0.8);
 }
 body:not(.light-mode) {
-  --color-accent-glow-start: rgba(130, 170, 255, 0.5); /* Dark mode accent with opacity */
+  --color-accent-glow-start: rgba(130, 170, 255, 0.5);
   --color-accent-glow-end: rgba(130, 170, 255, 0.7);
 }
 
@@ -1017,7 +1002,7 @@ body:not(.light-mode) {
 /* Focus Mode Styles */
 .app-container.app-focus-mode > .main-content > .note-area {
   filter: blur(4px);
-  pointer-events: none; /* Prevent interaction with blurred area */
+  pointer-events: none;
 }
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > .action-button:not(#recordButton):not(#settingsButton) {
   filter: blur(4px);
@@ -1027,21 +1012,18 @@ body:not(.light-mode) {
   filter: blur(4px);
 }
 
-/* Ensure record button itself is not blurred and is prominent when enabled in focus mode*/
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > .record-button:not(:disabled) {
   filter: none !important;
-  transform: scale(1.12); /* Make it slightly larger in focus mode */
-  z-index: 1001; /* Ensure it's above blurred items and focus overlay text */
+  transform: scale(1.12);
+  z-index: 1001;
   animation: pulse-glow 2.5s infinite ease-in-out;
 }
 
-/* Ensure settings (key) button is not blurred and is prominent in focus mode */
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton {
   filter: none !important; 
   pointer-events: auto !important; 
   z-index: 1001; 
   transform: scale(1.1); 
-  /* Glow animation is now conditional via .settings-needs-glow class */
 }
 
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton.settings-needs-glow {
@@ -1054,22 +1036,21 @@ body:not(.light-mode) {
   top: 0;
   left: 0;
   right: 0;
-  bottom: var(--footer-height); /* Default, adjust if live interface is up */
+  bottom: var(--footer-height);
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
-  z-index: 50; /* Above blurred content, below record button */
-  pointer-events: none; /* Click through to elements behind if any */
+  z-index: 50;
+  pointer-events: none;
   opacity: 0;
   transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out;
-  padding: 20px; /* Ensure text doesn't touch edges */
+  padding: 20px;
 }
 
 .app-container.app-focus-mode .focus-prompt-overlay {
   opacity: 1;
 }
-/* Adjust bottom position if live recording interface is active */
 .app-container.app-is-live-recording.app-focus-mode .focus-prompt-overlay {
     bottom: var(--live-footer-height);
 }
@@ -1079,21 +1060,21 @@ body:not(.light-mode) {
   font-weight: bold;
   font-style: italic;
   color: var(--color-text);
-  background: var(--glass-bg); /* Slight backing for readability */
-  backdrop-filter: blur(5px); /* Blur its own background slightly for more pop */
+  background: var(--glass-bg);
+  backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   padding: 20px 35px;
   border-radius: 12px;
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
-  max-width: 500px; /* Control width of the text box */
-  pointer-events: auto; /* If any interaction was needed with the text itself */
+  max-width: 500px;
+  pointer-events: auto;
 }
 
 
 @media (max-width: 768px) {
   .note-area { padding: 20px 0 0; }
-  .note-header { padding: 0 20px 12px; } /* Keep column layout from base .note-header */
+  .note-header { padding: 0 20px 12px; }
   .header-controls { flex-direction: column; align-items: stretch; gap: 12px; }
   .language-selector-container { justify-content: space-between; }
   #outputLanguageSelect { width: 100%; }
@@ -1102,11 +1083,26 @@ body:not(.light-mode) {
   .tab-navigation { width: 100%; }
   .tab-button { flex-grow: 1; text-align: center; }
   .note-content-wrapper { padding: 0 20px 20px; }
-  .recording-interface.is-live { padding-left: 15px; padding-right: 15px; } /* Keep existing responsive padding */
-  #liveWaveformCanvas { max-width: calc(100% - 30px); height: 60px; }
-  .live-recording-timer { font-size: 36px; }
+  
+  .recording-interface.is-live { 
+    padding-left: 15px; 
+    padding-right: 15px; 
+  }
+  .live-recording-title { /* Added for mobile optimization */
+    margin-bottom: 8px; /* WAS default 12px */
+  }
+  #liveWaveformCanvas { 
+    max-width: calc(100% - 30px); /* Keep existing max-width calc */
+    height: 50px; /* WAS 60px */
+    margin-bottom: 12px; /* WAS default 18px */
+  }
+  .live-recording-timer { 
+    font-size: 32px; /* WAS 36px */
+    margin-bottom: 15px; /* WAS default 22px */
+  }
+
   .action-button { width: 44px; height: 44px; font-size: 16px; }
-  .recording-controls { gap: 8px; /* Tighter gap on mobile */ }
+  .recording-controls { gap: 8px; }
   .record-button { width: 64px; height: 64px; }
   .modal-content { width: 95%; padding: 16px; max-height: 90vh;}
   .modal-header h2 { font-size: 18px; }
@@ -1141,23 +1137,12 @@ body:not(.light-mode) {
 /* iOS PWA Safe Area Adjustments for Footer */
 @media (display-mode: standalone) {
   .recording-interface {
-    /* Base padding-bottom is 5px (from its general style) for the .recording-interface */
-    /* We also need to account for the app-attribution's own padding.
-       The goal is to ensure the entire content of .recording-interface is visible.
-       So, we add the safe-area-inset to the existing padding.
-    */
-    padding-bottom: calc(5px + env(safe-area-inset-bottom));
+    /* Base padding-bottom is 10px (from its general style) */
+    padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* WAS 5px */
   }
 
   .recording-interface.is-live {
-    /* Base padding-bottom is 20px (from its .is-live style) for the .recording-interface */
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    /* Base padding-bottom is 15px (from its .is-live style) */
+    padding-bottom: calc(15px + env(safe-area-inset-bottom)); /* WAS 20px */
   }
-
-  /*
-    If the app-attribution div itself needs extra padding *within* the recording-interface,
-    you could target it directly, but usually padding the container (.recording-interface) is sufficient.
-    For instance, if the .app-attribution was outside and fixed, you'd pad it too.
-    Since it's inside .recording-interface, padding .recording-interface should lift everything within it.
-  */
 }
