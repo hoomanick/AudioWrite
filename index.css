@@ -277,9 +277,10 @@ body.light-mode .ios-install-banner {
 .header-controls {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: center; /* Center items vertically if they wrap on same line */
     width: 100%;
     gap: 16px; 
+    flex-wrap: wrap; /* Allow wrapping */
 }
 
 .language-selector-container {
@@ -288,6 +289,7 @@ body.light-mode .ios-install-banner {
     gap: 8px;
     font-size: 13px;
     color: var(--color-text-secondary);
+    flex-shrink: 0; /* Prevent shrinking too much */
 }
 
 #outputLanguageSelect {
@@ -303,6 +305,14 @@ body.light-mode .ios-install-banner {
 }
 #outputLanguageSelect:focus {
     border-color: var(--color-accent);
+}
+
+.tab-and-copy-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Space between tab nav and copy buttons */
+    flex-grow: 1; /* Allow this group to take up space */
+    justify-content: flex-end; /* Align to the right by default */
 }
 
 .tab-navigation-container {
@@ -377,6 +387,46 @@ body.light-mode .active-tab-indicator {
   box-shadow: 0 0.5px 1.5px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.03) inset;
 }
 
+.copy-buttons-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.copy-button {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--color-text-secondary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: var(--font-primary);
+    cursor: pointer;
+    transition: var(--transition-fast) all;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+.copy-button i {
+    margin-right: 6px;
+}
+.copy-button:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+    border-color: var(--glass-highlight);
+    transform: translateY(-1px);
+}
+.copy-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+.copy-button .fa-check, .copy-button .fa-times, .copy-button .fa-exclamation-triangle {
+    color: var(--color-accent);
+}
+.copy-button:disabled .fa-check { color: var(--color-success); }
+.copy-button:disabled .fa-times { color: var(--color-danger); }
+.copy-button:disabled .fa-exclamation-triangle { color: var(--color-warning); }
+
+
 .custom-prompt-section {
     width: 100%;
     margin-top: 8px; 
@@ -420,7 +470,7 @@ body.light-mode .active-tab-indicator {
     border: none;
     padding: 12px;
     font-family: var(--font-primary);
-    font-size: 14px;
+    font-size: 16px; /* Changed from 14px to 16px */
     line-height: 1.5;
     resize: vertical;
     outline: none;
@@ -1089,13 +1139,37 @@ body:not(.light-mode) {
 @media (max-width: 768px) {
   .note-area { padding: 20px 0 0; }
   .note-header { padding: 0 20px 12px; } 
-  .header-controls { flex-direction: column; align-items: stretch; gap: 12px; }
-  .language-selector-container { justify-content: space-between; }
-  #outputLanguageSelect { width: 100%; }
-  .editor-title { font-size: 20px; text-align: left; }
-  .tab-navigation-container { width: 100%; }
-  .tab-navigation { width: 100%; }
+  .header-controls { 
+    flex-direction: column; 
+    align-items: stretch; 
+    gap: 12px; 
+  }
+  .language-selector-container { 
+    justify-content: space-between; 
+    width: 100%; 
+  }
+  #outputLanguageSelect { 
+      width: auto; /* Allow it to size based on content or min-width */
+      flex-grow: 1; /* Allow it to grow if lang selector is on its own line */
+  }
+  .tab-and-copy-actions {
+    width: 100%; /* Make tab nav and copy buttons take full width */
+    justify-content: space-between; /* Space them out */
+    flex-wrap: wrap; /* Allow copy buttons to wrap */
+  }
+  .tab-navigation-container { 
+      /* width: 100%; Ensure it doesn't try to take full width if copy buttons are next to it */
+      flex-shrink: 0; /* Don't let it shrink too much */
+  }
+  .copy-buttons-container {
+    /* width: 100%;  Let it wrap naturally */
+    justify-content: flex-end; 
+    /* margin-top: 8px; Add space if it wraps below tabs */
+  }
+  .tab-navigation { width: 100%; } /* If tab nav is on its own line */
   .tab-button { flex-grow: 1; text-align: center; }
+
+  .editor-title { font-size: 20px; text-align: left; }
   .note-content-wrapper { padding: 0 20px 20px; }
   
   .recording-interface.is-live { 
@@ -1138,6 +1212,29 @@ body:not(.light-mode) {
     line-height: 1.3;
   }
 }
+
+@media (max-width: 480px) { 
+    .tab-and-copy-actions {
+        flex-direction: column; /* Stack tab nav and copy buttons */
+        align-items: stretch;
+        gap: 10px;
+    }
+    .tab-navigation-container {
+        width: 100%;
+    }
+    .copy-buttons-container {
+        justify-content: space-around; /* Space out copy buttons */
+        width: 100%;
+    }
+    .copy-button {
+        flex-grow: 1; /* Make copy buttons take equal space */
+        text-align: center;
+    }
+    #outputLanguageSelect {
+      min-width: 0; /* Allow more flexible sizing */
+    }
+}
+
 
 @media (display-mode: standalone) {
   /* Standalone PWA Specific Adjustments */
