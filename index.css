@@ -97,8 +97,8 @@
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  --footer-height: 150px; 
-  --live-footer-height: 350px; 
+  --footer-height: 150px;
+  --live-footer-height: 350px;
 }
 
 body.light-mode {
@@ -141,7 +141,7 @@ body.light-mode {
 
 html {
   height: 100%;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 body {
@@ -150,23 +150,23 @@ body {
   color: var(--color-text);
   line-height: 1.65;
   height: 100%;
-  overflow: hidden; 
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
   transition: background-color var(--transition-normal), color var(--transition-normal);
   margin: 0;
-  touch-action: manipulation; 
+  touch-action: manipulation;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100%; 
+  height: 100%;
   width: 100%;
   max-width: 100%;
-  overflow: hidden; 
-  position: relative; 
+  overflow: hidden;
+  position: relative;
   padding-top: env(safe-area-inset-top, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -183,9 +183,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky; 
-  top: 0; 
-  left: 0; 
+  position: sticky;
+  top: 0;
+  left: 0;
   width: 100%;
   z-index: 1500;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -221,9 +221,9 @@ body.light-mode .ios-install-banner {
   flex: 1;
   display: flex;
   flex-direction: column;
-  position: relative; 
-  overflow: hidden; 
-  transition: padding-bottom var(--transition-slow) ease-in-out, filter var(--transition-normal); 
+  position: relative;
+  overflow: hidden;
+  transition: padding-bottom var(--transition-slow) ease-in-out, filter var(--transition-normal);
 }
 
 .main-content:has(> .recording-interface.is-live) {
@@ -231,20 +231,20 @@ body.light-mode .ios-install-banner {
 }
 
 .note-area {
-  flex: 1; 
-  overflow: hidden; 
+  flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg);
-  padding: 24px 0 0; 
+  padding: 24px 0 0;
   transition: background-color var(--transition-normal), filter var(--transition-normal);
-  min-height: 0; 
+  min-height: 0;
 }
 
 .note-header {
   display: flex;
-  flex-direction: column; 
-  gap: 12px; 
+  flex-direction: column;
+  gap: 12px;
   padding: 0 40px 16px;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 12px;
@@ -279,7 +279,7 @@ body.light-mode .ios-install-banner {
     justify-content: space-between;
     align-items: center; /* Center items vertically if they wrap on same line */
     width: 100%;
-    gap: 16px; 
+    gap: 16px;
     flex-wrap: wrap; /* Allow wrapping */
 }
 
@@ -429,7 +429,7 @@ body.light-mode .active-tab-indicator {
 
 .custom-prompt-section {
     width: 100%;
-    margin-top: 8px; 
+    margin-top: 8px;
 }
 
 .custom-prompt-toggle {
@@ -456,7 +456,7 @@ body.light-mode .active-tab-indicator {
     margin-top: 8px;
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    overflow: hidden; 
+    overflow: hidden;
 }
 .custom-prompt-container.hidden {
     display: none;
@@ -529,37 +529,37 @@ body.light-mode #customPromptTextarea {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px 20px 5px; 
+  padding: 10px 20px 5px;
   background-color: transparent;
   border-top: 1px solid transparent;
-  flex-shrink: 0; 
+  flex-shrink: 0;
   transition: opacity 0.3s ease-out, transform 0.35s ease-out,
-              background-color var(--transition-slow) ease-in-out, 
+              background-color var(--transition-slow) ease-in-out,
               height var(--transition-slow) ease-in-out,
-              filter var(--transition-normal); 
-  z-index: 10; 
+              filter var(--transition-normal);
+  z-index: 10;
 }
 
 .recording-interface.is-live {
-  position: fixed; 
-  bottom: 0; 
-  left: 0;   
-  right: 0;  
-  height: var(--live-footer-height); 
-  z-index: 1000; 
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--live-footer-height);
+  z-index: 1000;
   background-color: var(--glass-recording-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--glass-recording-border);
   box-shadow: 0 -4px 20px var(--glass-shadow);
-  justify-content: flex-start; 
-  padding-top: 20px; 
+  justify-content: flex-start;
+  padding-top: 20px;
   padding-right: calc(20px + env(safe-area-inset-right, 0px));
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   padding-left: calc(20px + env(safe-area-inset-left, 0px));
 }
 
-.status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); } 
+.status-indicator { margin-bottom: 12px; transition: filter var(--transition-normal); }
 .recording-interface.is-live .status-indicator { display: none; }
 .status-text { font-size: 14px; color: var(--color-text-tertiary); text-align: center; transition: color var(--transition-normal); font-family: var(--font-primary); }
 .status-text.warning { color: var(--color-warning); }
@@ -614,9 +614,9 @@ body.light-mode #customPromptTextarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px; 
+  gap: 12px;
   position: relative;
-  margin-bottom: 8px; 
+  margin-bottom: 8px;
 }
 
 .action-button {
@@ -631,12 +631,12 @@ body.light-mode #customPromptTextarea {
 }
 .recording-interface.is-live .action-button:not(#recordButton):not(#settingsButton) { display: none; }
 .recording-interface.is-live #settingsButton {
-   display: none; 
+   display: none;
 }
 
 
 .action-button:hover { color: var(--color-text); transform: translateY(-2px) scale(1.05); box-shadow: var(--shadow-md); background-color: var(--color-surface-hover); border-color: var(--glass-highlight); }
-.action-button#archiveButton i { font-size: 17px; } 
+.action-button#archiveButton i { font-size: 17px; }
 .action-button#settingsButton i { font-size: 18px; }
 
 
@@ -668,7 +668,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 .record-button:disabled:hover .record-button-inner {
     transform: none;
-    box-shadow: var(--shadow-md); 
+    box-shadow: var(--shadow-md);
 }
 
 .record-button.record-button-ready-glow:not(.recording):not(:disabled) .record-button-inner {
@@ -693,13 +693,13 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   color: var(--color-text-tertiary);
   text-align: center;
   width: 100%;
-  padding: 4px 0; 
+  padding: 4px 0;
 }
 
 .recording-interface.is-live .app-attribution {
   font-size: 10px;
-  padding-top: 6px; 
-  padding-bottom: 2px; 
+  padding-top: 6px;
+  padding-bottom: 2px;
 }
 
 
@@ -734,9 +734,9 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   padding: 24px;
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
-  width: 90%; 
+  width: 90%;
   max-width: 700px;
-  max-height: 85vh; 
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   transform: scale(0.95);
@@ -775,7 +775,7 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 .archive-list {
   flex-grow: 1;
   overflow-y: auto;
-  margin: -8px; 
+  margin: -8px;
   padding: 8px;
 }
 
@@ -832,11 +832,11 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
 }
 .archive-item-content p {
     margin-bottom: 4px;
-    max-height: 60px; 
+    max-height: 60px;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 3; 
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
 }
 
@@ -895,6 +895,9 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
     flex-direction: column;
     gap: 20px;
     padding-top: 8px;
+    overflow-y: auto; /* Allow vertical scrolling for the settings body */
+    flex-grow: 1; /* Allow it to take available space within modal-content */
+    min-height: 0; /* Important for flex children that need to scroll */
 }
 
 .settings-section {
@@ -963,7 +966,7 @@ body.light-mode #apiKeyInput:focus {
     filter: brightness(1.1);
 }
 body.light-mode .action-button-primary {
-    color: white; 
+    color: white;
 }
 
 .api-key-info {
@@ -992,7 +995,7 @@ body.light-mode .action-button-primary {
     padding-top: 12px;
     border-top: 1px solid var(--color-border);
 }
-.api-key-instructions h4 { 
+.api-key-instructions h4 {
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text);
@@ -1045,18 +1048,18 @@ body.light-mode .action-button-primary {
 }
 
 body.light-mode {
-  --color-accent-glow-start: rgba(0, 122, 255, 0.6); 
+  --color-accent-glow-start: rgba(0, 122, 255, 0.6);
   --color-accent-glow-end: rgba(0, 122, 255, 0.8);
 }
 body:not(.light-mode) {
-  --color-accent-glow-start: rgba(130, 170, 255, 0.5); 
+  --color-accent-glow-start: rgba(130, 170, 255, 0.5);
   --color-accent-glow-end: rgba(130, 170, 255, 0.7);
 }
 
 /* General Focus Mode (app-focus-mode) - DEPRECATED in favor of more subtle glows or initial API focus */
 /* .app-container.app-focus-mode > .main-content > .note-area {
   filter: blur(4px);
-  pointer-events: none; 
+  pointer-events: none;
 }
 .app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > .action-button:not(#recordButton):not(#settingsButton) {
   filter: blur(4px);
@@ -1075,7 +1078,7 @@ body:not(.light-mode) {
 .app-container.app-initial-api-focus > .main-content > .recording-interface > .status-indicator {
   filter: blur(5px) saturate(0.8); /* Slightly stronger blur and desaturation */
   pointer-events: none;
-  opacity: 0.6; 
+  opacity: 0.6;
   transition: filter var(--transition-normal), opacity var(--transition-normal);
 }
 
@@ -1083,7 +1086,7 @@ body:not(.light-mode) {
   filter: none !important;
   pointer-events: auto !important;
   opacity: 1 !important;
-  transform: scale(1.1); 
+  transform: scale(1.1);
   /* The .settings-needs-glow class will be added by JS for animation */
 }
 .app-container.app-initial-api-focus > .main-content > .recording-interface > .recording-controls > #settingsButton.settings-needs-glow {
@@ -1101,11 +1104,11 @@ body:not(.light-mode) {
   justify-content: center;
   align-items: center;
   text-align: center;
-  z-index: 50; 
-  pointer-events: none; 
+  z-index: 50;
+  pointer-events: none;
   opacity: 0;
   transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out, filter var(--transition-normal);
-  padding: 20px; 
+  padding: 20px;
 }
 
 /* Ensure the focus prompt is visible and centered during initial API focus */
@@ -1124,31 +1127,31 @@ body:not(.light-mode) {
   font-weight: bold;
   font-style: italic;
   color: var(--color-text);
-  background: var(--glass-bg); 
-  backdrop-filter: blur(5px); 
+  background: var(--glass-bg);
+  backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   padding: 20px 35px;
   border-radius: 12px;
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
-  max-width: 500px; 
-  pointer-events: auto; 
+  max-width: 500px;
+  pointer-events: auto;
 }
 
 
 @media (max-width: 768px) {
   .note-area { padding: 20px 0 0; }
-  .note-header { padding: 0 20px 12px; } 
-  .header-controls { 
-    flex-direction: column; 
-    align-items: stretch; 
-    gap: 12px; 
+  .note-header { padding: 0 20px 12px; }
+  .header-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
-  .language-selector-container { 
-    justify-content: space-between; 
-    width: 100%; 
+  .language-selector-container {
+    justify-content: space-between;
+    width: 100%;
   }
-  #outputLanguageSelect { 
+  #outputLanguageSelect {
       width: auto; /* Allow it to size based on content or min-width */
       flex-grow: 1; /* Allow it to grow if lang selector is on its own line */
   }
@@ -1157,13 +1160,13 @@ body:not(.light-mode) {
     justify-content: space-between; /* Space them out */
     flex-wrap: wrap; /* Allow copy buttons to wrap */
   }
-  .tab-navigation-container { 
+  .tab-navigation-container {
       /* width: 100%; Ensure it doesn't try to take full width if copy buttons are next to it */
       flex-shrink: 0; /* Don't let it shrink too much */
   }
   .copy-buttons-container {
     /* width: 100%;  Let it wrap naturally */
-    justify-content: flex-end; 
+    justify-content: flex-end;
     /* margin-top: 8px; Add space if it wraps below tabs */
   }
   .tab-navigation { width: 100%; } /* If tab nav is on its own line */
@@ -1171,14 +1174,14 @@ body:not(.light-mode) {
 
   .editor-title { font-size: 20px; text-align: left; }
   .note-content-wrapper { padding: 0 20px 20px; }
-  
-  .recording-interface.is-live { 
-    padding-left: calc(15px + env(safe-area-inset-left, 0px)); 
+
+  .recording-interface.is-live {
+    padding-left: calc(15px + env(safe-area-inset-left, 0px));
     padding-right: calc(15px + env(safe-area-inset-right, 0px));
-    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); 
-    padding-top: 15px; 
-  } 
-  
+    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    padding-top: 15px;
+  }
+
   #liveWaveformCanvas { max-width: calc(100% - 30px); height: 60px; }
   .live-recording-timer { font-size: 36px; }
   .action-button { width: 44px; height: 44px; font-size: 16px; }
@@ -1213,7 +1216,7 @@ body:not(.light-mode) {
   }
 }
 
-@media (max-width: 480px) { 
+@media (max-width: 480px) {
     .tab-and-copy-actions {
         flex-direction: column; /* Stack tab nav and copy buttons */
         align-items: stretch;
