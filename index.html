@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -10,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="manifest" href="/AudioWrite/assets/manifest-CmeSAweO.json">
+    <!-- manifest.json link removed as vite-plugin-pwa will handle this -->
     <meta name="theme-color" content="#1E1E1E">
 
     <!-- Standard Favicons -->
@@ -36,13 +37,14 @@
     "@google/genai": "https://esm.sh/@google/genai@^0.8.0",
     "marked": "https://esm.sh/marked@^4.0.0",
     "path": "https://esm.sh/path@^0.12.7",
-    "vite": "https://esm.sh/vite@^6.3.5"
+    "vite": "https://esm.sh/vite@^6.3.5",
+    "vite-plugin-pwa": "https://esm.sh/vite-plugin-pwa@^1.0.0"
   }
 }
 </script>
-    <script type="module" crossorigin src="/AudioWrite/assets/index-Dr-son94.js"></script>
-    <link rel="stylesheet" crossorigin href="/AudioWrite/assets/index-CRyWw9vZ.css">
-  </head>
+    <script type="module" crossorigin src="/AudioWrite/assets/index-BSMy6Kao.js"></script>
+    <link rel="stylesheet" crossorigin href="/AudioWrite/assets/index-8fYZgCe1.css">
+  <link rel="manifest" href="/AudioWrite/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/AudioWrite/registerSW.js"></script></head>
   <body>
     <div class="app-container">
       <div id="iosInstallBanner" class="ios-install-banner hidden">
@@ -66,11 +68,21 @@
                 <label for="outputLanguageSelect">Output Language:</label>
                 <select id="outputLanguageSelect"></select>
               </div>
-              <div class="tab-navigation-container">
-                <div class="tab-navigation">
-                  <button class="tab-button active" data-tab="note">Polished</button>
-                  <button class="tab-button" data-tab="raw">Raw</button>
-                  <div class="active-tab-indicator"></div>
+              <div class="tab-and-copy-actions">
+                <div class="tab-navigation-container">
+                  <div class="tab-navigation">
+                    <button class="tab-button active" data-tab="note">Polished</button>
+                    <button class="tab-button" data-tab="raw">Raw</button>
+                    <div class="active-tab-indicator"></div>
+                  </div>
+                </div>
+                <div class="copy-buttons-container">
+                    <button id="copyPolishedNoteButton" class="action-button-small copy-button" title="Copy Polished Note to Clipboard" aria-label="Copy Polished Note to Clipboard">
+                        <i class="fas fa-copy"></i> Copy Polished
+                    </button>
+                    <button id="copyRawTranscriptionButton" class="action-button-small copy-button" title="Copy Raw Transcription to Clipboard" aria-label="Copy Raw Transcription to Clipboard">
+                        <i class="fas fa-copy"></i> Copy Raw
+                    </button>
                 </div>
               </div>
             </div>
@@ -110,7 +122,7 @@
           </div>
 
           <div class="status-indicator">
-            <span id="recordingStatus" class="status-text">Ready to record</span>
+            <span id="recordingStatus" class="status-text" aria-live="polite">Ready to record</span>
           </div>
 
           <div class="recording-controls">
@@ -194,78 +206,65 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const tabNav = document.querySelector(".tab-navigation");
-        const tabButtons = tabNav.querySelectorAll(".tab-button");
-        const activeTabIndicator = tabNav.querySelector(".active-tab-indicator");
-        const noteContents = document.querySelectorAll(".note-content");
+        if (tabNav) { // Add null check for safety
+            const tabButtons = tabNav.querySelectorAll(".tab-button");
+            const activeTabIndicator = tabNav.querySelector(".active-tab-indicator");
+            const noteContents = document.querySelectorAll(".note-content");
 
-        function setActiveTab(activeButton, skipAnimation = false) {
-          if (!activeButton || !activeTabIndicator) return;
+            function setActiveTab(activeButton, skipAnimation = false) {
+            if (!activeButton || !activeTabIndicator) return;
 
-          tabButtons.forEach((btn) => btn.classList.remove("active"));
-          activeButton.classList.add("active");
+            tabButtons.forEach((btn) => btn.classList.remove("active"));
+            activeButton.classList.add("active");
 
-          const tabName = activeButton.getAttribute("data-tab");
-          noteContents.forEach((content) => content.classList.remove("active"));
+            const tabName = activeButton.getAttribute("data-tab");
+            noteContents.forEach((content) => content.classList.remove("active"));
 
-          if (tabName === "raw") {
-            document.getElementById("rawTranscription").classList.add("active");
-          } else {
-            document.getElementById("polishedNote").classList.add("active");
-          }
-
-          const originalTransition = activeTabIndicator.style.transition;
-          if (skipAnimation) {
-            activeTabIndicator.style.transition = "none";
-          } else {
-            activeTabIndicator.style.transition = "";
-          }
-
-          activeTabIndicator.style.left = `${activeButton.offsetLeft}px`;
-          activeTabIndicator.style.width = `${activeButton.offsetWidth}px`;
-
-          if (skipAnimation) {
-            activeTabIndicator.offsetHeight; // Trigger reflow
-            activeTabIndicator.style.transition = originalTransition;
-          }
-        }
-
-        tabButtons.forEach((button) => {
-          button.addEventListener("click", (e) => {
-            setActiveTab(e.currentTarget);
-          });
-        });
-
-        const initiallyActiveButton = tabNav.querySelector(".tab-button.active");
-        if (initiallyActiveButton) {
-          requestAnimationFrame(() => {
-            setActiveTab(initiallyActiveButton, true);
-          });
-        }
-
-        window.addEventListener("resize", () => {
-          requestAnimationFrame(() => {
-            const currentActiveButton = tabNav.querySelector(".tab-button.active");
-            if (currentActiveButton) {
-              setActiveTab(currentActiveButton, true);
+            if (tabName === "raw") {
+                document.getElementById("rawTranscription").classList.add("active");
+            } else {
+                document.getElementById("polishedNote").classList.add("active");
             }
-          });
-        });
+
+            const originalTransition = activeTabIndicator.style.transition;
+            if (skipAnimation) {
+                activeTabIndicator.style.transition = "none";
+            } else {
+                activeTabIndicator.style.transition = ""; // Revert to CSS defined transition
+            }
+
+            activeTabIndicator.style.left = `${activeButton.offsetLeft}px`;
+            activeTabIndicator.style.width = `${activeButton.offsetWidth}px`;
+
+            if (skipAnimation) {
+                activeTabIndicator.offsetHeight; // Trigger reflow
+                activeTabIndicator.style.transition = originalTransition;
+            }
+            }
+
+            tabButtons.forEach((button) => {
+            button.addEventListener("click", (e) => {
+                setActiveTab(e.currentTarget);
+            });
+            });
+
+            const initiallyActiveButton = tabNav.querySelector(".tab-button.active");
+            if (initiallyActiveButton) {
+            requestAnimationFrame(() => {
+                setActiveTab(initiallyActiveButton, true);
+            });
+            }
+
+            window.addEventListener("resize", () => {
+            requestAnimationFrame(() => {
+                const currentActiveButton = tabNav.querySelector(".tab-button.active");
+                if (currentActiveButton) {
+                setActiveTab(currentActiveButton, true);
+                }
+            });
+            });
+        }
       });
     </script>
-    <!--
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js')
-            .then(registration => {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            })
-            .catch(err => {
-              console.log('ServiceWorker registration failed: ', err);
-            });
-        });
-      }
-    </script>
-    -->
   </body>
 </html>
