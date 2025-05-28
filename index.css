@@ -24,6 +24,7 @@
   --color-success-dark: #32d74b;
   --color-danger-dark: #ff453a;
   --color-warning-dark: #ffcc00;
+  --color-info-dark: #5ac8fa; /* Added info color */
 
 
   --glass-bg-dark: rgba(30, 30, 30, 0.6);
@@ -50,6 +51,7 @@
   --color-success-light: #30d158;
   --color-danger-light: #ff3b30;
   --color-warning-light: #ff9500;
+  --color-info-light: #007aff; /* Added info color */
 
 
   --glass-bg-light: rgba(255, 255, 255, 0.65);
@@ -76,6 +78,7 @@
   --color-success: var(--color-success-dark);
   --color-danger: var(--color-danger-dark);
   --color-warning: var(--color-warning-dark);
+  --color-info: var(--color-info-dark); /* Added info color */
   --glass-bg: var(--glass-bg-dark);
   --glass-border: var(--glass-border-dark);
   --glass-highlight: var(--glass-highlight-dark);
@@ -94,8 +97,8 @@
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  --footer-height: 150px; /* Adjusted height for non-live recording interface to accommodate attribution */
-  --live-footer-height: 350px; /* Height of the live recording interface when fixed */
+  --footer-height: 150px; 
+  --live-footer-height: 350px; 
 }
 
 body.light-mode {
@@ -115,6 +118,7 @@ body.light-mode {
   --color-success: var(--color-success-light);
   --color-danger: var(--color-danger-light);
   --color-warning: var(--color-warning-light);
+  --color-info: var(--color-info-light); /* Added info color */
   --glass-bg: var(--glass-bg-light);
   --glass-border: var(--glass-border-light);
   --glass-highlight: var(--glass-highlight-light);
@@ -145,7 +149,7 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.65;
-  height: 100%; /* Changed from 100vh for better visual viewport handling */
+  height: 100%;
   overflow: hidden; 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -163,11 +167,11 @@ body {
   max-width: 100%;
   overflow: hidden; 
   position: relative; 
-  /* Apply safe area padding to the main app container */
   padding-top: env(safe-area-inset-top, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
+  transition: filter var(--transition-normal); /* For general transitions if needed */
 }
 
 .ios-install-banner {
@@ -179,7 +183,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky; /* Sticks below the app-container's top safe area padding */
+  position: sticky; 
   top: 0; 
   left: 0; 
   width: 100%;
@@ -219,11 +223,9 @@ body.light-mode .ios-install-banner {
   flex-direction: column;
   position: relative; 
   overflow: hidden; 
-  transition: padding-bottom var(--transition-slow) ease-in-out; 
+  transition: padding-bottom var(--transition-slow) ease-in-out, filter var(--transition-normal); 
 }
 
-/* When .is-live is a direct child of .main-content, add padding to .main-content */
-/* This rule is specifically for making space for the FIXED live footer */
 .main-content:has(> .recording-interface.is-live) {
   padding-bottom: var(--live-footer-height);
 }
@@ -302,7 +304,6 @@ body.light-mode .ios-install-banner {
 #outputLanguageSelect:focus {
     border-color: var(--color-accent);
 }
-
 
 .tab-navigation-container {
   background: var(--glass-bg);
@@ -446,7 +447,6 @@ body.light-mode #customPromptTextarea {
   padding: 12px 0;
   font-family: var(--font-primary);
   letter-spacing: -0.01em;
-
   opacity: 0;
   transform: scale(0.985) translateY(8px);
   transition: opacity var(--transition-tabs), transform var(--transition-tabs);
@@ -485,27 +485,25 @@ body.light-mode #customPromptTextarea {
   flex-shrink: 0; 
   transition: opacity 0.3s ease-out, transform 0.35s ease-out,
               background-color var(--transition-slow) ease-in-out, 
-              height var(--transition-slow) ease-in-out; 
+              height var(--transition-slow) ease-in-out,
+              filter var(--transition-normal); 
   z-index: 10; 
 }
 
 .recording-interface.is-live {
   position: fixed; 
-  bottom: 0; /* Sticks to the bottom of the app-container's safe area */
-  left: 0;   /* Sticks to the left of the app-container's safe area */
-  right: 0;  /* Sticks to the right of the app-container's safe area */
+  bottom: 0; 
+  left: 0;   
+  right: 0;  
   height: var(--live-footer-height); 
   z-index: 1000; 
-
   background-color: var(--glass-recording-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--glass-recording-border);
   box-shadow: 0 -4px 20px var(--glass-shadow);
-
   justify-content: flex-start; 
   padding-top: 20px; 
-  /* Adjust padding to incorporate safe areas for content INSIDE the fixed footer */
   padding-right: calc(20px + env(safe-area-inset-right, 0px));
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   padding-left: calc(20px + env(safe-area-inset-left, 0px));
@@ -517,6 +515,7 @@ body.light-mode #customPromptTextarea {
 .status-text.warning { color: var(--color-warning); }
 .status-text.error { color: var(--color-danger); }
 .status-text.success { color: var(--color-success); }
+.status-text.info { color: var(--color-info); }
 
 
 .live-recording-title,
@@ -670,7 +669,6 @@ body.light-mode .record-button.recording .record-button-inner { color: white; }
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0s linear 0.3s;
-  /* Safe area for modal itself, ensuring it doesn't underlap system UI when full screen */
   padding-top: env(safe-area-inset-top, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -944,7 +942,7 @@ body.light-mode .action-button-primary {
     padding-top: 12px;
     border-top: 1px solid var(--color-border);
 }
-.api-key-instructions h4 { /* Changed from h3 for semantic hierarchy */
+.api-key-instructions h4 { 
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text);
@@ -1005,8 +1003,8 @@ body:not(.light-mode) {
   --color-accent-glow-end: rgba(130, 170, 255, 0.7);
 }
 
-
-.app-container.app-focus-mode > .main-content > .note-area {
+/* General Focus Mode (app-focus-mode) - DEPRECATED in favor of more subtle glows or initial API focus */
+/* .app-container.app-focus-mode > .main-content > .note-area {
   filter: blur(4px);
   pointer-events: none; 
 }
@@ -1016,34 +1014,38 @@ body:not(.light-mode) {
 }
 .app-container.app-focus-mode > .main-content > .recording-interface > .status-indicator {
   filter: blur(4px);
+} */
+/* Styles for the record button and settings button glow are now applied directly by JS with .record-button-ready-glow and .settings-needs-glow */
+
+
+/* Styles for Initial API Key Focus Mode */
+.app-container.app-initial-api-focus > .main-content > .note-area,
+.app-container.app-initial-api-focus > .main-content > .recording-interface > .recording-controls > .action-button:not(#settingsButton),
+.app-container.app-initial-api-focus > .main-content > .recording-interface > .recording-controls > .record-button,
+.app-container.app-initial-api-focus > .main-content > .recording-interface > .status-indicator {
+  filter: blur(5px) saturate(0.8); /* Slightly stronger blur and desaturation */
+  pointer-events: none;
+  opacity: 0.6; 
+  transition: filter var(--transition-normal), opacity var(--transition-normal);
 }
 
-.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > .record-button:not(:disabled) {
+.app-container.app-initial-api-focus > .main-content > .recording-interface > .recording-controls > #settingsButton {
   filter: none !important;
-  transform: scale(1.12); 
-  z-index: 1001; 
-  animation: pulse-glow 2.5s infinite ease-in-out;
-}
-
-.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton {
-  filter: none !important; 
-  pointer-events: auto !important; 
-  z-index: 1001; 
+  pointer-events: auto !important;
+  opacity: 1 !important;
   transform: scale(1.1); 
+  /* The .settings-needs-glow class will be added by JS for animation */
 }
-
-.app-container.app-focus-mode > .main-content > .recording-interface > .recording-controls > #settingsButton.settings-needs-glow {
-  animation: pulse-glow 2.5s infinite ease-in-out;
+.app-container.app-initial-api-focus > .main-content > .recording-interface > .recording-controls > #settingsButton.settings-needs-glow {
+  animation: pulse-glow 2.5s infinite ease-in-out; /* Ensure this glow is active */
 }
 
 
 .focus-prompt-overlay {
   position: fixed;
-  /* Adjust to respect safe areas */
   top: env(safe-area-inset-top, 0px);
   left: env(safe-area-inset-left, 0px);
   right: env(safe-area-inset-right, 0px);
-  /* Bottom calculation needs to account for footer height AND safe area */
   bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
@@ -1052,14 +1054,18 @@ body:not(.light-mode) {
   z-index: 50; 
   pointer-events: none; 
   opacity: 0;
-  transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out;
+  transition: opacity var(--transition-normal), bottom var(--transition-slow) ease-in-out, filter var(--transition-normal);
   padding: 20px; 
 }
 
-.app-container.app-focus-mode .focus-prompt-overlay {
+/* Ensure the focus prompt is visible and centered during initial API focus */
+.app-container.app-initial-api-focus .focus-prompt-overlay {
   opacity: 1;
+  pointer-events: auto; /* Allows interaction with prompt text if any, though not needed here */
+  filter: none; /* Ensure prompt itself is not blurred */
 }
-.app-container.app-is-live-recording.app-focus-mode .focus-prompt-overlay {
+
+.app-container.app-is-live-recording .focus-prompt-overlay { /* Covers if live recording starts while prompt was somehow up */
     bottom: calc(var(--live-footer-height) + env(safe-area-inset-bottom, 0px));
 }
 
@@ -1095,8 +1101,8 @@ body:not(.light-mode) {
   .recording-interface.is-live { 
     padding-left: calc(15px + env(safe-area-inset-left, 0px)); 
     padding-right: calc(15px + env(safe-area-inset-right, 0px));
-    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); /* Base padding + safe area */
-    padding-top: 15px; /* Keep consistent top padding */
+    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); 
+    padding-top: 15px; 
   } 
   
   #liveWaveformCanvas { max-width: calc(100% - 30px); height: 60px; }
@@ -1118,7 +1124,6 @@ body:not(.light-mode) {
     padding-top: 4px;
   }
 
-
   .focus-prompt-text {
     font-size: 20px;
     padding: 15px 25px;
@@ -1134,9 +1139,6 @@ body:not(.light-mode) {
   }
 }
 
-/* Standalone PWA Specific Adjustments (if any needed beyond global safe areas) */
 @media (display-mode: standalone) {
-  /* Example: If the .ios-install-banner should never show in PWA mode */
-  /* .ios-install-banner { display: none !important; } */
-  /* Most bottom padding issues should be resolved by .app-container's global safe area padding */
+  /* Standalone PWA Specific Adjustments */
 }

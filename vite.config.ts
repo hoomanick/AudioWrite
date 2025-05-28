@@ -3,13 +3,22 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    // Ensure YOUR_REPOSITORY_NAME is replaced with your actual GitHub repository name
-    // For example, if your repo URL is https://github.com/your-username/audiowrite-app,
-    // then base should be '/audiowrite-app/'
-    const repositoryName = process.env.GITHUB_REPOSITORY_NAME || 'AudioWrite'; // Updated
 
+    // Robustly determine repository name for GitHub Pages base path
+    // Handles cases where GITHUB_REPOSITORY_NAME might be 'owner/repo', just 'repo', or undefined.
+    const ghRepoEnvVar = process.env.GITHUB_REPOSITORY_NAME;
+    let repositoryNameForBase = 'AudioWrite'; // Default repository name
+
+    if (ghRepoEnvVar) {
+      if (ghRepoEnvVar.includes('/')) {
+        repositoryNameForBase = ghRepoEnvVar.split('/').pop() || 'AudioWrite';
+      } else {
+        repositoryNameForBase = ghRepoEnvVar;
+      }
+    }
+    
     return {
-      base: `/${repositoryName}/`, // Crucial for GitHub Pages
+      base: `/${repositoryNameForBase}/`, // Crucial for GitHub Pages
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

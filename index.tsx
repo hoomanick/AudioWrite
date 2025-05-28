@@ -11,6 +11,8 @@ const MODEL_NAME = 'gemini-2.5-flash-preview-04-17';
 const LOCAL_STORAGE_KEY = 'voiceNotesApp_notes';
 const SESSION_STORAGE_API_KEY = 'voiceNotesApp_apiKey';
 const SESSION_STORAGE_IOS_A2HS_DISMISSED = 'voiceNotesApp_iosA2HSDismissed';
+const SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE = 'voiceNotesApp_initialApiSetupComplete';
+
 
 interface Note {
   id: string;
@@ -96,6 +98,7 @@ class VoiceNotesApp {
   private appContainer: HTMLDivElement;
   private focusPromptOverlay: HTMLDivElement;
   private isLiveRecordingActive = false;
+  private isInitialApiKeyFocusActive = false;
 
   // PWA Install related
   private deferredInstallPrompt: any | null = null; // Using 'any' as BeforeInstallPromptEvent is not standard
@@ -141,7 +144,6 @@ class VoiceNotesApp {
     this.saveApiKeyButton = document.getElementById('saveApiKeyButton') as HTMLButtonElement;
     this.apiKeyStatus = document.getElementById('apiKeyStatus') as HTMLParagraphElement;
     
-    // PWA Install elements
     this.iosInstallBanner = document.getElementById('iosInstallBanner') as HTMLDivElement;
     this.dismissIosInstallBannerButton = document.getElementById('dismissIosInstallBannerButton') as HTMLButtonElement;
     this.installAppSection = document.getElementById('installAppSection') as HTMLDivElement;
@@ -158,17 +160,23 @@ class VoiceNotesApp {
     this.populateLanguageDropdown();
     this.bindEventListeners();
     this.initTheme();
-    this.initializePWAInstallHandlers(); // Initialize PWA install handlers
+    this.initializePWAInstallHandlers();
     this.loadNotes();
 
+    if (!this.userApiKey && !sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+        this.activateInitialApiKeyFocus();
+    } else {
+        this.checkAndSetFocusMode(); // Normal focus check (minimal impact now)
+    }
+    
     if (this.allNotes.length === 0) {
-      this.createNewNote();
+      this.createNewNote(); // This will also call checkAndSetFocusMode
     } else {
       const lastNote = this.allNotes.sort((a,b) => b.timestamp - a.timestamp)[0];
-      this.loadNoteIntoEditor(lastNote.id);
+      this.loadNoteIntoEditor(lastNote.id); // This will also call checkAndSetFocusMode
     }
-    this.updateApiKeyStatusUI();
-    this.checkAndSetFocusMode();
+    
+    this.updateApiKeyStatusUI(); // Ensure UI reflects API key state
   }
 
   private initializeApiKey(): void {
@@ -182,7 +190,8 @@ class VoiceNotesApp {
         console.error("Failed to initialize GoogleGenAI with stored API key:", error);
         this.genAI = null;
         this.userApiKey = null;
-        sessionStorage.removeItem(SESSION_STORAGE_API_KEY); // Clear invalid key
+        sessionStorage.removeItem(SESSION_STORAGE_API_KEY); 
+        sessionStorage.removeItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE);
       }
     } else {
       this.genAI = null;
@@ -194,7 +203,14 @@ class VoiceNotesApp {
       this.userApiKey = null;
       this.genAI = null;
       sessionStorage.removeItem(SESSION_STORAGE_API_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE); // Clear this if key is removed
       this.updateApiKeyStatusUI("API Key cleared. Please enter a valid key to use AI features.", "warning");
+      // If not already in initial focus, activate it because key is now missing
+      if (!sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+        this.activateInitialApiKeyFocus();
+      } else {
+        this.checkAndSetFocusMode(); // Update glows
+      }
       return;
     }
     try {
@@ -202,14 +218,26 @@ class VoiceNotesApp {
       this.genAI = testGenAI;
       this.userApiKey = apiKey.trim();
       sessionStorage.setItem(SESSION_STORAGE_API_KEY, this.userApiKey);
+      
+      if (!sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+          sessionStorage.setItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE, 'true');
+      }
+      if (this.isInitialApiKeyFocusActive) {
+          this.deactivateInitialApiKeyFocus();
+      }
+      
       this.updateApiKeyStatusUI("API Key saved and applied for this session.", "success");
-      this.closeSettingsModal();
+      this.closeSettingsModal(); // This will also call checkAndSetFocusMode & update glows
     } catch (error) {
       console.error("Error initializing GoogleGenAI with new API key:", error);
       this.genAI = null; 
       this.userApiKey = null; 
       sessionStorage.removeItem(SESSION_STORAGE_API_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE); // Key is invalid, so setup isn't "complete"
       this.updateApiKeyStatusUI("Invalid API Key format or other initialization error. Please check your key.", "error");
+      if (!this.isInitialApiKeyFocusActive) {
+          this.activateInitialApiKeyFocus(); // Force back to API setup focus
+      }
     }
   }
 
@@ -228,7 +256,7 @@ class VoiceNotesApp {
             }
         }
     }
-    if (this.recordingStatus && !this.isRecording && !this.isLiveRecordingActive) { 
+    if (this.recordingStatus && !this.isRecording && !this.isLiveRecordingActive && !this.isInitialApiKeyFocusActive) { 
         if (!this.genAI || !this.userApiKey) {
             this.recordingStatus.innerHTML = 'API Key needed for AI features. <button id="openSettingsFromStatus" class="text-button">Set Key</button>';
             this.recordingStatus.className = 'status-text warning';
@@ -240,6 +268,9 @@ class VoiceNotesApp {
             this.recordingStatus.textContent = 'Ready to record';
             this.recordingStatus.className = 'status-text';
         }
+    } else if (this.isInitialApiKeyFocusActive && this.recordingStatus) {
+        this.recordingStatus.textContent = 'Please set your API Key to begin.';
+        this.recordingStatus.className = 'status-text info';
     }
     
     this.recordButton.disabled = !this.genAI || !this.userApiKey;
@@ -250,13 +281,35 @@ class VoiceNotesApp {
     this.updateRecordButtonGlowState();
   }
 
+  private activateInitialApiKeyFocus(): void {
+    if (this.isInitialApiKeyFocusActive) return;
+    this.isInitialApiKeyFocusActive = true;
+    this.appContainer.classList.add('app-initial-api-focus');
+    this.focusPromptOverlay.classList.remove('hidden');
+    this.updateApiKeyStatusUI(); // Update status text for this mode
+    this.updateRecordButtonGlowState();
+  }
+
+  private deactivateInitialApiKeyFocus(): void {
+    if (!this.isInitialApiKeyFocusActive) return;
+    this.isInitialApiKeyFocusActive = false;
+    this.appContainer.classList.remove('app-initial-api-focus');
+    this.focusPromptOverlay.classList.add('hidden');
+    this.updateApiKeyStatusUI(); // Update status text
+    this.checkAndSetFocusMode(); // Update general focus/glows
+  }
+
   private updateRecordButtonGlowState(): void {
-    const isInFocusMode = this.appContainer.classList.contains('app-focus-mode');
     const isApiKeySet = !!(this.genAI && this.userApiKey);
     const isIdle = !this.isRecording && !this.isLiveRecordingActive;
+    const currentNote = this.getCurrentNote();
+    const isNoteEmpty = !currentNote || 
+                        (!currentNote.audioBlobBase64 && 
+                         !currentNote.rawTranscription && 
+                         !currentNote.polishedNote);
 
     if (this.settingsButton) {
-        if (isInFocusMode && !isApiKeySet && isIdle) {
+        if ((this.isInitialApiKeyFocusActive && !isApiKeySet) || (!isApiKeySet && isIdle && !this.isInitialApiKeyFocusActive)) {
           this.settingsButton.classList.add('settings-needs-glow');
         } else {
           this.settingsButton.classList.remove('settings-needs-glow');
@@ -264,14 +317,13 @@ class VoiceNotesApp {
     }
     
     if (this.recordButton) {
-        if (isApiKeySet && !isInFocusMode && isIdle) {
+        if (isApiKeySet && isIdle && isNoteEmpty && !this.isInitialApiKeyFocusActive) {
           this.recordButton.classList.add('record-button-ready-glow');
         } else {
           this.recordButton.classList.remove('record-button-ready-glow');
         }
     }
   }
-
 
   private populateLanguageDropdown(): void {
     DEFAULT_LANGUAGES.forEach(lang => {
@@ -301,11 +353,9 @@ class VoiceNotesApp {
     this.closeSettingsModalButton.addEventListener('click', () => this.closeSettingsModal());
     this.saveApiKeyButton.addEventListener('click', () => this.setApiKey(this.apiKeyInput.value));
 
-
     this.rawTranscriptionDiv.addEventListener('blur', () => this.handleContentEditableChange('rawTranscription'));
     this.polishedNoteDiv.addEventListener('blur', () => this.handleContentEditableChange('polishedNote'));
 
-    // PWA Install Listeners
     if (this.installAppButton) {
         this.installAppButton.addEventListener('click', () => this.promptInstall());
     }
@@ -315,16 +365,14 @@ class VoiceNotesApp {
   }
 
   private initializePWAInstallHandlers(): void {
-    // Android A2HS
     window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault(); // Prevent the mini-infobar
-      this.deferredInstallPrompt = e; // Stash the event so it can be triggered later.
+      e.preventDefault(); 
+      this.deferredInstallPrompt = e; 
       if (this.installAppSection) {
-        this.installAppSection.classList.remove('hidden'); // Show our custom install button
+        this.installAppSection.classList.remove('hidden'); 
       }
     });
 
-    // iOS A2HS Banner
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
@@ -337,20 +385,15 @@ class VoiceNotesApp {
 
   private async promptInstall(): Promise<void> {
     if (this.deferredInstallPrompt && this.installAppSection) {
-      this.installAppSection.classList.add('hidden'); // Hide our button
-      this.deferredInstallPrompt.prompt(); // Show the browser install prompt
+      this.installAppSection.classList.add('hidden'); 
+      this.deferredInstallPrompt.prompt(); 
       try {
         const { outcome } = await this.deferredInstallPrompt.userChoice;
         console.log(`User response to the install prompt: ${outcome}`);
-        if (outcome === 'accepted') {
-          // User accepted the A2HS prompt
-        } else {
-          // User dismissed the A2HS prompt
-        }
       } catch (error) {
         console.error('Error handling install prompt choice:', error);
       }
-      this.deferredInstallPrompt = null; // We've used the prompt.
+      this.deferredInstallPrompt = null; 
     }
   }
 
@@ -390,7 +433,6 @@ class VoiceNotesApp {
     this.saveNotes();
     this.checkAndSetFocusMode(); 
   }
-
 
   private handleOutputLanguageChange(): void {
     const currentNote = this.getCurrentNote();
@@ -476,11 +518,6 @@ class VoiceNotesApp {
             typeof note.timestamp === 'number' && 
             typeof note.targetLanguage === 'string' 
           );
-          if (this.allNotes.length !== parsedData.length) {
-            console.warn('Some notes were filtered out during loading due to malformed data.');
-          }
-        } else {
-          console.warn('Loaded notes from localStorage are not an array, resetting to empty.');
         }
       } catch (error) {
         console.error('Error parsing notes from localStorage:', error);
@@ -620,7 +657,6 @@ class VoiceNotesApp {
     if (this.timerIntervalId) clearInterval(this.timerIntervalId);
     this.timerIntervalId = window.setInterval(() => this.updateLiveTimer(), 50);
     this.checkAndSetFocusMode(); 
-    this.updateRecordButtonGlowState();
   }
 
   private stopLiveDisplay(): void {
@@ -629,7 +665,6 @@ class VoiceNotesApp {
     if (!this.recordingInterface || !this.liveRecordingTitle || !this.liveWaveformCanvas || !this.liveRecordingTimerDisplay) {
       if (this.recordingInterface) this.recordingInterface.classList.remove('is-live'); 
       this.checkAndSetFocusMode();
-      this.updateRecordButtonGlowState();
       return;
     }
     this.recordingInterface.classList.remove('is-live');
@@ -646,7 +681,6 @@ class VoiceNotesApp {
     }
     this.analyserNode = null; this.waveformDataArray = null;
     this.checkAndSetFocusMode(); 
-    this.updateRecordButtonGlowState();
   }
 
   private async startRecording(): Promise<void> {
@@ -667,7 +701,8 @@ class VoiceNotesApp {
     currentNote.polishedNote = '';
     this.displayNote(currentNote.id); 
 
-    this.appContainer.classList.remove('app-focus-mode');
+    this.appContainer.classList.remove('app-initial-api-focus'); // Ensure this is off if recording starts
+    this.appContainer.classList.remove('app-focus-mode'); // Old focus mode, ensure off
     this.focusPromptOverlay.classList.add('hidden');
 
     try {
@@ -1034,31 +1069,13 @@ ${noteToPolish.rawTranscription}`;
 
     if (!Array.isArray(this.allNotes)) {
         console.warn("CRITICAL: this.allNotes is not an array before push in createNewNote! Attempting recovery.");
-        const storedNotes = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedNotes) {
-            try {
-                let parsedData = JSON.parse(storedNotes);
-                if (Array.isArray(parsedData)) {
-                    this.allNotes = parsedData.filter(note =>
-                        note && typeof note === 'object' && typeof note.id === 'string' &&
-                        typeof note.title === 'string' && typeof note.rawTranscription === 'string' &&
-                        typeof note.polishedNote === 'string' && typeof note.timestamp === 'number' &&
-                        typeof note.targetLanguage === 'string'
-                    );
-                } else {
-                    console.error("CRITICAL: Stored data is not an array. Resetting allNotes.");
-                    this.allNotes = [];
-                }
-            } catch (error) {
-                console.error("CRITICAL: Error parsing stored data during recovery. Resetting allNotes.", error);
-                this.allNotes = [];
-            }
-        } else {
-             console.warn("CRITICAL: No stored data for recovery. Resetting allNotes to empty array.");
-            this.allNotes = []; 
+        this.allNotes = []; // Attempt to recover by re-initializing
+        this.loadNotes(); // Try loading again
+        if (!Array.isArray(this.allNotes)) { // If still not an array, hard reset.
+             console.error("CRITICAL: Recovery failed. Resetting allNotes to empty array.");
+             this.allNotes = [];
         }
     }
-
 
     const newNote: Note = {
       id: `note_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -1076,25 +1093,30 @@ ${noteToPolish.rawTranscription}`;
     this.displayNote(newNote.id); 
     
     this.updateApiKeyStatusUI(); 
-    this.checkAndSetFocusMode(); 
+    this.checkAndSetFocusMode(); // Called after displayNote, which also calls it. Redundant but safe.
   }
 
   private checkAndSetFocusMode(): void {
-    const currentNote = this.getCurrentNote();
-    const isEmpty = !currentNote || 
-                    (!currentNote.audioBlobBase64 && 
-                     !currentNote.rawTranscription && 
-                     !currentNote.polishedNote);
-
-    if (isEmpty && !this.isRecording && !this.isLiveRecordingActive) {
-        this.appContainer.classList.add('app-focus-mode');
+    if (this.isInitialApiKeyFocusActive) {
+        // If initial API key focus is active, it controls the UI entirely.
+        // Ensure prompt is visible, specific glows handled by updateRecordButtonGlowState.
         this.focusPromptOverlay.classList.remove('hidden');
-    } else {
-        this.appContainer.classList.remove('app-focus-mode');
-        this.focusPromptOverlay.classList.add('hidden');
+        this.appContainer.classList.add('app-initial-api-focus');
+        this.updateRecordButtonGlowState();
+        return;
     }
+
+    // After initial API setup, or if API key is already set:
+    // Remove any full-app focus mode classes and hide the main prompt.
+    this.appContainer.classList.remove('app-initial-api-focus');
+    this.appContainer.classList.remove('app-focus-mode'); // Remove old focus mode class too
+    this.focusPromptOverlay.classList.add('hidden'); // Main prompt is not used here.
+
+    // `updateRecordButtonGlowState` will handle glowing the record button
+    // if it's ready and the note is empty, or the settings button if API key is missing.
     this.updateRecordButtonGlowState();
   }
+
 
   private openArchiveModal(): void {
     this.renderArchiveList();
@@ -1107,7 +1129,6 @@ ${noteToPolish.rawTranscription}`;
 
   private openSettingsModal(): void {
     if (this.userApiKey) this.apiKeyInput.value = this.userApiKey;
-    // If deferredInstallPrompt is available, show the install section
     if (this.deferredInstallPrompt && this.installAppSection) {
         this.installAppSection.classList.remove('hidden');
     } else if (this.installAppSection) {
@@ -1120,17 +1141,26 @@ ${noteToPolish.rawTranscription}`;
   private closeSettingsModal(): void {
     this.settingsModal.classList.add('hidden');
     this.updateApiKeyStatusUI(); 
-    this.checkAndSetFocusMode(); 
+    
+    // If initial API setup was in progress but key wasn't set (or was cleared and modal closed),
+    // re-enter initial API focus mode.
+    if (!this.userApiKey && !sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+        if (!this.isInitialApiKeyFocusActive) { // Check to avoid re-triggering if already in it
+          this.activateInitialApiKeyFocus();
+        }
+    } else if (this.isInitialApiKeyFocusActive && this.userApiKey) {
+        // This case should ideally be handled by setApiKey(), but as a safeguard:
+        this.deactivateInitialApiKeyFocus();
+    } else {
+        // General case: update focus/glows based on current state.
+        this.checkAndSetFocusMode(); 
+    }
   }
 
 
   private renderArchiveList(): void {
     if (!this.archiveListContainer) {
         console.error("Critical: Archive list container DOM element not found.");
-        if (this.recordingStatus) {
-            this.recordingStatus.textContent = "Error: Archive display area is missing.";
-            this.recordingStatus.className = 'status-text error';
-        }
         return;
     }
     this.archiveListContainer.innerHTML = ''; 
