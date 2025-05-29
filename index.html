@@ -188,8 +188,28 @@
                         <ol>
                             <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
                             <li>Sign in with your Google account.</li>
-                            <li>Click "Create API Key" (you might need to create a project first).</li>
-                            <li>Copy the generated key and paste it into the field above.</li>
+                            <li>Click the button to <strong>"Get API key"</strong> or <strong>"Create API key"</strong>.</li>
+                            <li><strong>If you see a message like "Unable to create API key... Please create a project..."</strong>:
+                                <ul>
+                                    <li>Click the <strong>"Google Cloud Console" link</strong> in that message (it may open a new tab).</li>
+                                    <li>On the "New Project" page:
+                                        <ul>
+                                            <li>For <strong>Project name</strong>, enter something like <code>testing AudioWrite</code>.</li>
+                                            <li>For <strong>Location</strong>, select <strong>"No organization"</strong> if not already chosen.</li>
+                                            <li>Click the blue <strong>"Create"</strong> button.</li>
+                                        </ul>
+                                    </li>
+                                    <li>After project creation, close that Google Cloud Console tab and return to the Google AI Studio tab.</li>
+                                </ul>
+                            </li>
+                            <li>Back in Google AI Studio:
+                                <ul>
+                                    <li>Select your newly created project (e.g., <code>testing AudioWrite</code>).</li>
+                                    <li>Click <strong>"Create API key in existing project"</strong> (or similar).</li>
+                                </ul>
+                            </li>
+                            <li>Your API key will be displayed. <strong>Copy the generated key</strong>.</li>
+                            <li>Return to this app, paste the key into the field above, and click "Save & Apply Key".</li>
                         </ol>
                     </div>
                 </div>
