@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -78,6 +79,7 @@ class VoiceNotesApp {
   private toggleCustomPromptButton: HTMLButtonElement;
   private customPromptContainer: HTMLDivElement;
   private customPromptTextarea: HTMLTextAreaElement;
+  private applyCustomPromptButton: HTMLButtonElement;
   
   private archiveButton: HTMLButtonElement;
   private archiveModal: HTMLDivElement;
@@ -134,6 +136,7 @@ class VoiceNotesApp {
     this.toggleCustomPromptButton = document.getElementById('toggleCustomPromptButton') as HTMLButtonElement;
     this.customPromptContainer = document.getElementById('customPromptContainer') as HTMLDivElement;
     this.customPromptTextarea = document.getElementById('customPromptTextarea') as HTMLTextAreaElement;
+    this.applyCustomPromptButton = document.getElementById('applyCustomPromptButton') as HTMLButtonElement;
 
     this.archiveButton = document.getElementById('archiveButton') as HTMLButtonElement;
     this.archiveModal = document.getElementById('archiveModal') as HTMLDivElement;
@@ -182,7 +185,8 @@ class VoiceNotesApp {
       this.loadNoteIntoEditor(lastNote.id); 
     }
     
-    this.updateApiKeyStatusUI(); 
+    this.updateApiKeyStatusUI();
+    this.updateApplyCustomPromptButtonState(); 
   }
 
   private initializeApiKey(): void {
@@ -216,6 +220,7 @@ class VoiceNotesApp {
       } else {
         this.checkAndSetFocusMode(); 
       }
+      this.updateApplyCustomPromptButtonState();
       return;
     }
     try {
@@ -244,6 +249,7 @@ class VoiceNotesApp {
           this.activateInitialApiKeyFocus(); 
       }
     }
+    this.updateApplyCustomPromptButtonState();
   }
 
   private updateApiKeyStatusUI(message?: string, type?: 'success' | 'error' | 'warning' | 'info'): void {
@@ -284,6 +290,7 @@ class VoiceNotesApp {
         this.renderArchiveList();
     }
     this.updateRecordButtonGlowState();
+    this.updateApplyCustomPromptButtonState();
   }
 
   private activateInitialApiKeyFocus(): void {
@@ -349,6 +356,7 @@ class VoiceNotesApp {
     this.outputLanguageSelect.addEventListener('change', () => this.handleOutputLanguageChange());
     this.toggleCustomPromptButton.addEventListener('click', () => this.toggleCustomPromptDisplay());
     this.customPromptTextarea.addEventListener('blur', () => this.handleCustomPromptChange());
+    this.applyCustomPromptButton.addEventListener('click', () => this.handleApplyCustomPrompt());
     this.editorTitleDiv.addEventListener('blur', () => this.handleTitleChange());
 
     this.archiveButton.addEventListener('click', () => this.openArchiveModal());
@@ -440,6 +448,7 @@ class VoiceNotesApp {
     }
     this.saveNotes();
     this.checkAndSetFocusMode(); 
+    this.updateApplyCustomPromptButtonState(); // Raw transcription might have changed
   }
 
   private handleOutputLanguageChange(): void {
@@ -447,11 +456,23 @@ class VoiceNotesApp {
     if (currentNote) {
       currentNote.targetLanguage = this.outputLanguageSelect.value;
       this.saveNotes();
+      // No direct re-polish, user must click "Apply & Re-polish"
     }
   }
 
   private toggleCustomPromptDisplay(): void {
     this.customPromptContainer.classList.toggle('hidden');
+    this.applyCustomPromptButton.classList.toggle('hidden', this.customPromptContainer.classList.contains('hidden'));
+
+    if (this.customPromptContainer.classList.contains('hidden')) {
+        this.toggleCustomPromptButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Edit Custom Prompt';
+        this.toggleCustomPromptButton.title = 'Show custom prompt options';
+    } else {
+        this.toggleCustomPromptButton.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Custom Prompt';
+        this.toggleCustomPromptButton.title = 'Hide custom prompt options';
+        this.customPromptTextarea.focus();
+    }
+    this.updateApplyCustomPromptButtonState();
   }
   
   private handleCustomPromptChange(): void {
@@ -459,8 +480,73 @@ class VoiceNotesApp {
     if (currentNote) {
         currentNote.customPolishingPrompt = this.customPromptTextarea.value.trim() || undefined;
         this.saveNotes();
+        // No direct re-polish, user must click "Apply & Re-polish"
     }
   }
+
+  private updateApplyCustomPromptButtonState(): void {
+    const currentNote = this.getCurrentNote();
+    const isCustomPromptSectionVisible = !this.customPromptContainer.classList.contains('hidden');
+    
+    // Ensure visibility is managed by toggleCustomPromptDisplay for the button too
+    // this.applyCustomPromptButton.classList.toggle('hidden', !isCustomPromptSectionVisible);
+
+    const canRepolish = !!(
+        this.genAI &&
+        this.userApiKey &&
+        currentNote &&
+        currentNote.audioBlobBase64 && // Requires audio
+        currentNote.rawTranscription && // Requires raw transcription to be present
+        isCustomPromptSectionVisible // Button is only active if its section is visible
+    );
+    this.applyCustomPromptButton.disabled = !canRepolish;
+  }
+
+  private async handleApplyCustomPrompt(): Promise<void> {
+    const currentNote = this.getCurrentNote();
+    if (!this.genAI || !this.userApiKey) {
+        this.updateApiKeyStatusUI("API Key needed to re-polish.", "warning");
+        this.openSettingsModal();
+        return;
+    }
+    if (!currentNote || !currentNote.audioBlobBase64 || !currentNote.rawTranscription) {
+        this.recordingStatus.textContent = 'Note must have audio and raw transcription to re-polish.';
+        this.recordingStatus.className = 'status-text warning';
+        this.updateApplyCustomPromptButtonState();
+        return;
+    }
+
+    const targetLanguage = this.outputLanguageSelect.value;
+    const customPrompt = this.customPromptTextarea.value.trim();
+
+    // Update note object with new settings for this re-polish
+    currentNote.targetLanguage = targetLanguage;
+    currentNote.customPolishingPrompt = customPrompt || undefined;
+    // saveNotes() will be called by getPolishedNote
+
+    const originalButtonText = this.applyCustomPromptButton.innerHTML;
+    this.applyCustomPromptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Polishing...';
+    this.applyCustomPromptButton.disabled = true;
+    this.outputLanguageSelect.disabled = true;
+    this.customPromptTextarea.disabled = true;
+    this.toggleCustomPromptButton.disabled = true;
+
+    try {
+        await this.getPolishedNote(currentNote.id, targetLanguage, customPrompt);
+    } catch (error) {
+        console.error("Error during handleApplyCustomPrompt:", error);
+        // getPolishedNote already sets recordingStatus and saves note on error
+    } finally {
+        this.applyCustomPromptButton.innerHTML = originalButtonText;
+        // updateApplyCustomPromptButtonState will be called by displayNote if successful,
+        // or here if error occurs before displayNote
+        this.updateApplyCustomPromptButtonState(); 
+        this.outputLanguageSelect.disabled = false;
+        this.customPromptTextarea.disabled = false;
+        this.toggleCustomPromptButton.disabled = false;
+    }
+  }
+
 
   private formatTimestamp(timestamp: number): string {
     return new Date(timestamp).toLocaleString(undefined, { 
@@ -498,9 +584,11 @@ class VoiceNotesApp {
     
     this.outputLanguageSelect.value = note.targetLanguage || 'en';
     this.customPromptTextarea.value = note.customPolishingPrompt || '';
-    this.customPromptContainer.classList.toggle('hidden', !note.customPolishingPrompt);
+    // Do not automatically show/hide custom prompt section here, let user control it.
+    // this.customPromptContainer.classList.toggle('hidden', !note.customPolishingPrompt);
 
     this.checkAndSetFocusMode();
+    this.updateApplyCustomPromptButtonState();
   }
   
   private getCurrentNote(): Note | null {
@@ -707,7 +795,7 @@ class VoiceNotesApp {
     currentNote.audioMimeType = undefined;
     currentNote.rawTranscription = ''; 
     currentNote.polishedNote = '';
-    this.displayNote(currentNote.id); 
+    this.displayNote(currentNote.id); // This will call updateApplyCustomPromptButtonState
 
     this.appContainer.classList.remove('app-initial-api-focus'); 
     this.appContainer.classList.remove('app-focus-mode'); 
@@ -828,9 +916,10 @@ class VoiceNotesApp {
       this.saveNotes();
       
       if (this.currentNoteId === noteIdToProcess) {
-        this.displayNote(noteIdToProcess);
+        this.displayNote(noteIdToProcess); // This will update button states
       } else {
         this.checkAndSetFocusMode(); 
+        this.updateApplyCustomPromptButtonState(); // In case current note changed
       }
 
       await this.getTranscription(base64Audio, noteForProcessing.audioMimeType, noteIdToProcess);
@@ -893,10 +982,11 @@ class VoiceNotesApp {
         noteForTranscription.rawTranscription = transcriptionText;
         this.saveNotes();
         if (this.currentNoteId === noteId) { 
-            this.displayNote(noteId); 
+            this.displayNote(noteId); // This will update button states
         } else {
              if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList(); 
              this.checkAndSetFocusMode();
+             this.updateApplyCustomPromptButtonState(); // In case current note changed
         }
         this.recordingStatus.textContent = 'Transcription complete. Polishing note...';
         this.recordingStatus.className = 'status-text';
@@ -912,6 +1002,7 @@ class VoiceNotesApp {
             if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
             this.checkAndSetFocusMode();
         }
+        this.updateApplyCustomPromptButtonState(); // Update state after attempting transcription
       }
     } catch (error) {
       console.error('Error getting transcription:', error);
@@ -926,6 +1017,7 @@ class VoiceNotesApp {
           if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
           this.checkAndSetFocusMode();
       }
+      this.updateApplyCustomPromptButtonState(); // Update state after error
     }
   }
 
@@ -956,6 +1048,7 @@ class VoiceNotesApp {
             if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
             this.checkAndSetFocusMode();
         }
+        this.updateApplyCustomPromptButtonState();
         return;
       }
 
@@ -963,9 +1056,14 @@ class VoiceNotesApp {
       this.recordingStatus.className = 'status-text';
 
       const targetLanguageCode = overrideTargetLanguage || noteToPolish.targetLanguage || this.outputLanguageSelect.value;
+      
+      // When called from handleApplyCustomPrompt, overrideCustomPrompt will be the current textarea value.
+      // Otherwise, it falls back to the note's stored prompt or current editor's prompt if it's the active note.
       const customPrompt = overrideCustomPrompt !== undefined 
         ? overrideCustomPrompt 
-        : (this.currentNoteId === noteId ? this.customPromptTextarea.value.trim() : noteToPolish.customPolishingPrompt);
+        : ( (this.currentNoteId === noteId && !this.customPromptContainer.classList.contains('hidden') ) // if editor prompt is visible for current note
+            ? this.customPromptTextarea.value.trim() 
+            : noteToPolish.customPolishingPrompt);
       
       const targetLanguage = DEFAULT_LANGUAGES.find(l => l.code === targetLanguageCode) || DEFAULT_LANGUAGES[0];
 
@@ -1006,9 +1104,9 @@ ${noteToPolish.rawTranscription}`;
         const htmlContent = marked.parse(polishedText) as string;
         noteToPolish.polishedNote = htmlContent;
         noteToPolish.targetLanguage = targetLanguageCode; 
-        noteToPolish.customPolishingPrompt = customPrompt || undefined;
+        noteToPolish.customPolishingPrompt = customPrompt || undefined; // Save the used prompt
 
-        if (this.currentNoteId === noteId && !overrideTargetLanguage) { 
+        if (this.currentNoteId === noteId && !overrideTargetLanguage && !overrideCustomPrompt) { // Only auto-title on initial processing, not re-polish
             let noteTitleSet = false;
             const lines = polishedText.split('\n').map((l) => l.trim());
             for (const line of lines) {
@@ -1066,6 +1164,7 @@ ${noteToPolish.rawTranscription}`;
         this.checkAndSetFocusMode();
       }
     }
+    this.updateApplyCustomPromptButtonState(); // Ensure button state is correct after polishing attempt
   }
 
   private async createNewNote(): Promise<void> {
@@ -1098,7 +1197,7 @@ ${noteToPolish.rawTranscription}`;
     this.allNotes.push(newNote);
     this.currentNoteId = newNote.id; 
     this.saveNotes();
-    this.displayNote(newNote.id); 
+    this.displayNote(newNote.id); // This will call updateApplyCustomPromptButtonState
     
     this.updateApiKeyStatusUI(); 
     this.checkAndSetFocusMode(); 
@@ -1222,8 +1321,8 @@ ${noteToPolish.rawTranscription}`;
           </div>
           <div class="archive-item-actions">
             <button class="action-button-small load-note" title="Load to Editor">Load</button>
-            <select class="repolish-language" ${!isApiKeySet ? 'disabled' : ''}></select>
-            <button class="action-button-small repolish-note" title="Re-polish this note with selected language" ${!isApiKeySet ? 'disabled' : ''}>Re-polish</button>
+            <select class="repolish-language" ${!isApiKeySet || !note.rawTranscription || !note.audioBlobBase64 ? 'disabled' : ''}></select>
+            <button class="action-button-small repolish-note" title="Re-polish this note with selected language and its stored custom prompt" ${!isApiKeySet || !note.rawTranscription || !note.audioBlobBase64 ? 'disabled' : ''}>Re-polish</button>
             <button class="action-button-small danger delete-note" title="Delete Note">Delete</button>
           </div>
         `;
@@ -1244,12 +1343,24 @@ ${noteToPolish.rawTranscription}`;
         
         const repolishButton = item.querySelector('.repolish-note') as HTMLButtonElement;
         if (repolishButton && langSelect) {
+            if (!note.rawTranscription || !note.audioBlobBase64) { // Disable if no audio/raw
+                repolishButton.disabled = true;
+                langSelect.disabled = true;
+            }
             repolishButton.addEventListener('click', async () => {
               if (!this.genAI || !this.userApiKey) {
                 this.openSettingsModal();
                 return;
               }
+              if (!note.rawTranscription || !note.audioBlobBase64){
+                this.recordingStatus.textContent = 'Cannot re-polish: Missing audio or raw transcription.';
+                this.recordingStatus.className = 'status-text warning';
+                return;
+              }
+
               const newLang = langSelect.value;
+              // Use the note's stored custom prompt for archive re-polish.
+              // To change custom prompt, user loads to editor and uses the main interface.
               const customPromptForRepolish = note.customPolishingPrompt; 
               
               this.recordingStatus.textContent = `Re-polishing "${noteTitle}"...`;
@@ -1261,7 +1372,7 @@ ${noteToPolish.rawTranscription}`;
               await this.getPolishedNote(note.id, newLang, customPromptForRepolish);
               
               repolishButton.textContent = 'Re-polish';
-              if (this.genAI && this.userApiKey) { 
+              if (this.genAI && this.userApiKey && note.rawTranscription && note.audioBlobBase64) { 
                 repolishButton.disabled = false;
                 langSelect.disabled = false;
               }

@@ -1,3 +1,4 @@
+
 @import url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css);
 @import url(https://fonts.cdnfonts.com/css/sf-mono);
 
@@ -430,6 +431,9 @@ body.light-mode .active-tab-indicator {
 .custom-prompt-section {
     width: 100%;
     margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
 }
 
 .custom-prompt-toggle {
@@ -443,6 +447,7 @@ body.light-mode .active-tab-indicator {
     padding: 4px 8px;
     border-radius: 6px;
     transition: color var(--transition-fast), background-color var(--transition-fast);
+    align-self: flex-start; /* Align to the start of the flex container */
 }
 .custom-prompt-toggle:hover {
     color: var(--color-text);
@@ -453,7 +458,7 @@ body.light-mode .active-tab-indicator {
 }
 
 .custom-prompt-container {
-    margin-top: 8px;
+    margin-top: 0; /* Adjusted as gap is handled by flex parent */
     border: 1px solid var(--color-border);
     border-radius: 8px;
     overflow: hidden;
@@ -479,6 +484,39 @@ body.light-mode .active-tab-indicator {
 body.light-mode #customPromptTextarea {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
 }
+
+.apply-prompt-button {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-primary);
+    cursor: pointer;
+    transition: var(--transition-fast) all;
+    align-self: flex-start; /* Align to start, or center/flex-end as preferred */
+}
+.apply-prompt-button i {
+    margin-right: 8px;
+}
+.apply-prompt-button:hover:not(:disabled) {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+.apply-prompt-button:disabled {
+    background-color: var(--color-text-tertiary);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+body.light-mode .apply-prompt-button {
+    color: white; /* Ensure text is white on accent bg in light mode */
+}
+body.light-mode .apply-prompt-button:disabled {
+    background-color: var(--color-text-tertiary);
+}
+
 
 .note-content-wrapper {
   flex: 1;
@@ -1235,6 +1273,10 @@ body:not(.light-mode) {
     }
     #outputLanguageSelect {
       min-width: 0; /* Allow more flexible sizing */
+    }
+    .apply-prompt-button {
+        align-self: stretch; /* Make button full width in this layout */
+        text-align: center;
     }
 }
 
