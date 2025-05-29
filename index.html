@@ -42,8 +42,8 @@
   }
 }
 </script>
-    <script type="module" crossorigin src="/AudioWrite/assets/index-S3eYNpuC.js"></script>
-    <link rel="stylesheet" crossorigin href="/AudioWrite/assets/index-4dtHKnfF.css">
+    <script type="module" crossorigin src="/AudioWrite/assets/index-Dq_f4KZ-.js"></script>
+    <link rel="stylesheet" crossorigin href="/AudioWrite/assets/index-DE7FuaP4.css">
   <link rel="manifest" href="/AudioWrite/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/AudioWrite/registerSW.js"></script></head>
   <body>
     <div class="app-container">
@@ -87,12 +87,15 @@
               </div>
             </div>
              <div class="custom-prompt-section">
-                <button id="toggleCustomPromptButton" class="custom-prompt-toggle" title="Toggle Custom Prompt">
-                    <i class="fas fa-wand-magic-sparkles"></i> Custom Prompt
+                <button id="toggleCustomPromptButton" class="custom-prompt-toggle" title="Edit Custom Prompt">
+                    <i class="fas fa-wand-magic-sparkles"></i> Edit Custom Prompt
                 </button>
                 <div id="customPromptContainer" class="custom-prompt-container hidden">
                     <textarea id="customPromptTextarea" placeholder="Enter custom polishing instructions here (e.g., summarize in 3 bullet points, adopt a formal tone...). If empty, default polishing will be used."></textarea>
                 </div>
+                <button id="applyCustomPromptButton" class="action-button-small apply-prompt-button hidden" title="Re-polish note with current custom prompt and language" aria-label="Re-polish note with current custom prompt and language">
+                    <i class="fas fa-sync-alt"></i> Apply & Re-polish
+                </button>
             </div>
           </div>
 
