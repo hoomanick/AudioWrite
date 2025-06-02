@@ -102,16 +102,6 @@ If you want to run a local copy *after cloning the repository*:
 
 AudioWrite is built using Vite and deployed as a static website to GitHub Pages.
 
-### GitHub Pages Deployment Steps (Summary):
-
-1.  Push your code to your GitHub repository (`main` branch for source).
-2.  Ensure `vite.config.ts` has the correct `base` path (e.g., `/AudioWrite/`).
-3.  Ensure `package.json` has the correct `homepage` URL.
-4.  Run `npm run deploy`. This script builds the project and pushes the `dist` folder contents to the `gh-pages` branch.
-5.  Configure GitHub Pages (Settings > Pages) to deploy from the `gh-pages` branch.
-6.  Your site will be available at `https://hoomanick.github.io/AudioWrite/`.
-7.  *Users of the deployed version will need to provide their own Gemini API Key.*
-
 ## 🙌 Contributing
 
 Contributions are welcome! Please feel free to fork the project, create a feature branch, commit your changes, and open a Pull Request.
