@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -8,11 +7,11 @@
 import {GoogleGenAI, GenerateContentResponse} from '@google/genai';
 import {marked} from 'marked';
 
-const MODEL_NAME = 'gemini-2.5-flash-preview-04-17';
+const MODEL_NAME = 'gemini-2.5-flash';
 const LOCAL_STORAGE_KEY = 'voiceNotesApp_notes';
-const SESSION_STORAGE_API_KEY = 'voiceNotesApp_apiKey';
+const LOCAL_STORAGE_API_KEY = 'voiceNotesApp_apiKey';
 const SESSION_STORAGE_IOS_A2HS_DISMISSED = 'voiceNotesApp_iosA2HSDismissed';
-const SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE = 'voiceNotesApp_initialApiSetupComplete';
+const LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE = 'voiceNotesApp_initialApiSetupComplete';
 
 
 interface Note {
@@ -172,7 +171,7 @@ class VoiceNotesApp {
     this.initializePWAInstallHandlers();
     this.loadNotes();
 
-    if (!this.userApiKey && !sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+    if (!this.userApiKey && !localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
         this.activateInitialApiKeyFocus();
     } else {
         this.checkAndSetFocusMode(); 
@@ -190,7 +189,7 @@ class VoiceNotesApp {
   }
 
   private initializeApiKey(): void {
-    const storedApiKey = sessionStorage.getItem(SESSION_STORAGE_API_KEY);
+    const storedApiKey = localStorage.getItem(LOCAL_STORAGE_API_KEY);
     if (storedApiKey) {
       this.userApiKey = storedApiKey;
       try {
@@ -200,8 +199,8 @@ class VoiceNotesApp {
         console.error("Failed to initialize GoogleGenAI with stored API key:", error);
         this.genAI = null;
         this.userApiKey = null;
-        sessionStorage.removeItem(SESSION_STORAGE_API_KEY); 
-        sessionStorage.removeItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE);
+        localStorage.removeItem(LOCAL_STORAGE_API_KEY); 
+        localStorage.removeItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE);
       }
     } else {
       this.genAI = null;
@@ -212,10 +211,10 @@ class VoiceNotesApp {
     if (!apiKey.trim()) {
       this.userApiKey = null;
       this.genAI = null;
-      sessionStorage.removeItem(SESSION_STORAGE_API_KEY);
-      sessionStorage.removeItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE); 
+      localStorage.removeItem(LOCAL_STORAGE_API_KEY);
+      localStorage.removeItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE); 
       this.updateApiKeyStatusUI("API Key cleared. Please enter a valid key to use AI features.", "warning");
-      if (!sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+      if (!localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
         this.activateInitialApiKeyFocus();
       } else {
         this.checkAndSetFocusMode(); 
@@ -227,23 +226,23 @@ class VoiceNotesApp {
       const testGenAI = new GoogleGenAI({ apiKey: apiKey.trim() });
       this.genAI = testGenAI;
       this.userApiKey = apiKey.trim();
-      sessionStorage.setItem(SESSION_STORAGE_API_KEY, this.userApiKey);
+      localStorage.setItem(LOCAL_STORAGE_API_KEY, this.userApiKey);
       
-      if (!sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
-          sessionStorage.setItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE, 'true');
+      if (!localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+          localStorage.setItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE, 'true');
       }
       if (this.isInitialApiKeyFocusActive) {
           this.deactivateInitialApiKeyFocus();
       }
       
-      this.updateApiKeyStatusUI("API Key saved and applied for this session.", "success");
+      this.updateApiKeyStatusUI("API Key saved and applied.", "success");
       this.closeSettingsModal(); 
     } catch (error) {
       console.error("Error initializing GoogleGenAI with new API key:", error);
       this.genAI = null; 
       this.userApiKey = null; 
-      sessionStorage.removeItem(SESSION_STORAGE_API_KEY);
-      sessionStorage.removeItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE); 
+      localStorage.removeItem(LOCAL_STORAGE_API_KEY);
+      localStorage.removeItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE); 
       this.updateApiKeyStatusUI("Invalid API Key format or other initialization error. Please check your key.", "error");
       if (!this.isInitialApiKeyFocusActive) {
           this.activateInitialApiKeyFocus(); 
@@ -259,7 +258,7 @@ class VoiceNotesApp {
             this.apiKeyStatus.className = `api-key-status ${type}`;
         } else {
             if (this.userApiKey && this.genAI) {
-                this.apiKeyStatus.textContent = 'API Key is set for this session.';
+                this.apiKeyStatus.textContent = 'API Key is set and saved in this browser.';
                 this.apiKeyStatus.className = 'api-key-status success';
             } else {
                 this.apiKeyStatus.textContent = 'API Key not set. AI features are disabled.';
@@ -1243,7 +1242,7 @@ ${noteToPolish.rawTranscription}`;
     this.settingsModal.classList.add('hidden');
     this.updateApiKeyStatusUI(); 
     
-    if (!this.userApiKey && !sessionStorage.getItem(SESSION_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
+    if (!this.userApiKey && !localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
         if (!this.isInitialApiKeyFocusActive) { 
           this.activateInitialApiKeyFocus();
         }
