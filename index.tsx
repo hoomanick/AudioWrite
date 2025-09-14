@@ -951,6 +951,38 @@ class VoiceNotesApp {
     return displayErrorMessage;
   }
 
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    retries = 3,
+    delay = 2000,
+    onRetry?: (attempt: number, error: any) => void
+  ): Promise<T> {
+    let attempt = 1;
+    while (attempt <= retries) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        if (attempt === retries) {
+          throw error;
+        }
+        
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes("503") || errorMessage.toLowerCase().includes("overloaded")) {
+             if (onRetry) {
+                onRetry(attempt, error);
+            }
+            const jitter = Math.random() * 500;
+            const backoffTime = delay * Math.pow(2, attempt - 1) + jitter;
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+            attempt++;
+        } else {
+            throw error;
+        }
+      }
+    }
+    throw new Error('Retry logic failed unexpectedly.');
+  }
+
   private async getTranscription(base64Audio: string, mimeType: string, noteId: string): Promise<void> {
     if (!this.genAI) {
         this.recordingStatus.textContent = 'API Key not set for transcription.';
@@ -974,7 +1006,16 @@ class VoiceNotesApp {
         {text: 'Generate a complete, detailed transcript of this audio.'},
         {inlineData: {mimeType: mimeType, data: base64Audio}},
       ];
-      const response: GenerateContentResponse = await this.genAI.models.generateContent({ model: MODEL_NAME, contents: contents });
+
+      const generateContentFn = () => this.genAI!.models.generateContent({ model: MODEL_NAME, contents: contents });
+
+      const onRetryCallback = (attempt: number, error: any) => {
+          console.warn(`Transcription attempt ${attempt} failed. Retrying...`, error);
+          this.recordingStatus.textContent = `Model is busy. Retrying transcription... (${attempt}/3)`;
+          this.recordingStatus.className = 'status-text warning';
+      };
+      
+      const response: GenerateContentResponse = await this.retryWithBackoff(generateContentFn, 3, 2000, onRetryCallback);
       const transcriptionText = response.text; 
 
       if (transcriptionText) {
@@ -1096,7 +1137,14 @@ ${noteToPolish.rawTranscription}`;
       }
       
       const contents = [{text: promptText}];
-      const response: GenerateContentResponse = await this.genAI.models.generateContent({ model: MODEL_NAME, contents: contents });
+      
+      const generateContentFn = () => this.genAI!.models.generateContent({ model: MODEL_NAME, contents: contents });
+      const onRetryCallback = (attempt: number, error: any) => {
+          console.warn(`Polishing attempt ${attempt} failed. Retrying...`, error);
+          this.recordingStatus.textContent = `Model is busy. Retrying polishing... (${attempt}/3)`;
+          this.recordingStatus.className = 'status-text warning';
+      };
+      const response: GenerateContentResponse = await this.retryWithBackoff(generateContentFn, 3, 2000, onRetryCallback);
       const polishedText = response.text; 
 
       if (polishedText) {
