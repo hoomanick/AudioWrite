@@ -1,4 +1,5 @@
 
+
 @import url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css);
 @import url(https://fonts.cdnfonts.com/css/sf-mono);
 
@@ -308,6 +309,71 @@ body.light-mode .ios-install-banner {
     border-color: var(--color-accent);
 }
 
+.auto-polish-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+.auto-polish-label {
+    cursor: pointer;
+    user-select: none;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--glass-border);
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--color-text-tertiary);
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+input:checked + .slider {
+  background-color: var(--color-accent);
+}
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--color-accent);
+}
+input:checked + .slider:before {
+  -webkit-transform: translateX(20px);
+  -ms-transform: translateX(20px);
+  transform: translateX(20px);
+  background-color: white;
+}
+.slider.round {
+  border-radius: 24px;
+}
+.slider.round:before {
+  border-radius: 50%;
+}
+
+
 .tab-and-copy-actions {
     display: flex;
     align-items: center;
@@ -436,6 +502,12 @@ body.light-mode .active-tab-indicator {
     gap: 8px; 
 }
 
+.custom-prompt-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .custom-prompt-toggle {
     background: none;
     border: none;
@@ -496,7 +568,7 @@ body.light-mode #customPromptTextarea {
     font-family: var(--font-primary);
     cursor: pointer;
     transition: var(--transition-fast) all;
-    align-self: flex-start; /* Align to start, or center/flex-end as preferred */
+    align-self: center;
 }
 .apply-prompt-button i {
     margin-right: 8px;

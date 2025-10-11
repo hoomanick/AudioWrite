@@ -37,7 +37,8 @@
     "marked": "https://esm.sh/marked@^4.0.0",
     "path": "https://esm.sh/path@^0.12.7",
     "vite": "https://esm.sh/vite@^6.3.5",
-    "vite-plugin-pwa": "https://esm.sh/vite-plugin-pwa@^1.0.0"
+    "vite-plugin-pwa": "https://esm.sh/vite-plugin-pwa@^1.0.0",
+    "url": "https://aistudiocdn.com/url@^0.11.4"
   }
 }
 </script>
@@ -65,6 +66,13 @@
                 <label for="outputLanguageSelect">Output Language:</label>
                 <select id="outputLanguageSelect"></select>
               </div>
+              <div class="auto-polish-container">
+                <label for="autoPolishToggle" class="auto-polish-label">Auto-Polish</label>
+                <label class="switch">
+                    <input type="checkbox" id="autoPolishToggle">
+                    <span class="slider round"></span>
+                </label>
+              </div>
               <div class="tab-and-copy-actions">
                 <div class="tab-navigation-container">
                   <div class="tab-navigation">
@@ -84,15 +92,17 @@
               </div>
             </div>
              <div class="custom-prompt-section">
-                <button id="toggleCustomPromptButton" class="custom-prompt-toggle" title="Edit Custom Prompt">
-                    <i class="fas fa-wand-magic-sparkles"></i> Edit Custom Prompt
-                </button>
+                <div class="custom-prompt-actions">
+                    <button id="toggleCustomPromptButton" class="custom-prompt-toggle" title="Edit Custom Prompt">
+                        <i class="fas fa-wand-magic-sparkles"></i> Edit Custom Prompt
+                    </button>
+                    <button id="applyCustomPromptButton" class="action-button-small apply-prompt-button" title="Polish note with current settings" aria-label="Polish note with current settings">
+                        <i class="fas fa-magic"></i> Polish Note
+                    </button>
+                </div>
                 <div id="customPromptContainer" class="custom-prompt-container hidden">
                     <textarea id="customPromptTextarea" placeholder="Enter custom polishing instructions here (e.g., summarize in 3 bullet points, adopt a formal tone...). If empty, default polishing will be used."></textarea>
                 </div>
-                <button id="applyCustomPromptButton" class="action-button-small apply-prompt-button hidden" title="Re-polish note with current custom prompt and language" aria-label="Re-polish note with current custom prompt and language">
-                    <i class="fas fa-sync-alt"></i> Apply & Re-polish
-                </button>
             </div>
           </div>
 

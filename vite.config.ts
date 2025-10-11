@@ -1,5 +1,6 @@
 
-import path from 'path';
+
+import { URL, fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -26,7 +27,8 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          // FIX: Replaced __dirname with import.meta.url to be compatible with ES modules.
+          '@': fileURLToPath(new URL('.', import.meta.url)),
         }
       },
       plugins: [

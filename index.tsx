@@ -9,9 +9,9 @@ import {marked} from 'marked';
 
 const MODEL_NAME = 'gemini-2.5-flash';
 const LOCAL_STORAGE_KEY = 'voiceNotesApp_notes';
-const LOCAL_STORAGE_API_KEY = 'voiceNotesApp_apiKey';
+// FIX: Removed constants for local storage of API key, as it's now handled by environment variables.
 const SESSION_STORAGE_IOS_A2HS_DISMISSED = 'voiceNotesApp_iosA2HSDismissed';
-const LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE = 'voiceNotesApp_initialApiSetupComplete';
+const LOCAL_STORAGE_AUTO_POLISH = 'voiceNotesApp_autoPolish';
 
 
 interface Note {
@@ -44,7 +44,7 @@ const DEFAULT_LANGUAGES = [
 
 class VoiceNotesApp {
   private genAI: GoogleGenAI | null = null;
-  private userApiKey: string | null = null;
+  // FIX: Removed userApiKey property. API key is now managed via process.env.
 
   private mediaRecorder: MediaRecorder | null = null;
   private recordButton: HTMLButtonElement;
@@ -79,6 +79,7 @@ class VoiceNotesApp {
   private customPromptContainer: HTMLDivElement;
   private customPromptTextarea: HTMLTextAreaElement;
   private applyCustomPromptButton: HTMLButtonElement;
+  private autoPolishToggle: HTMLInputElement;
   
   private archiveButton: HTMLButtonElement;
   private archiveModal: HTMLDivElement;
@@ -88,9 +89,7 @@ class VoiceNotesApp {
   private settingsButton: HTMLButtonElement;
   private settingsModal: HTMLDivElement;
   private closeSettingsModalButton: HTMLButtonElement;
-  private apiKeyInput: HTMLInputElement;
-  private saveApiKeyButton: HTMLButtonElement;
-  private apiKeyStatus: HTMLParagraphElement;
+  // FIX: Removed UI elements for API key input as they are no longer needed.
 
   private copyPolishedNoteButton: HTMLButtonElement;
   private copyRawTranscriptionButton: HTMLButtonElement;
@@ -102,7 +101,7 @@ class VoiceNotesApp {
   private appContainer: HTMLDivElement;
   private focusPromptOverlay: HTMLDivElement;
   private isLiveRecordingActive = false;
-  private isInitialApiKeyFocusActive = false;
+  private isAutoPolishEnabled = true;
 
   // PWA Install related
   private deferredInstallPrompt: any | null = null; // Using 'any' as BeforeInstallPromptEvent is not standard
@@ -136,6 +135,7 @@ class VoiceNotesApp {
     this.customPromptContainer = document.getElementById('customPromptContainer') as HTMLDivElement;
     this.customPromptTextarea = document.getElementById('customPromptTextarea') as HTMLTextAreaElement;
     this.applyCustomPromptButton = document.getElementById('applyCustomPromptButton') as HTMLButtonElement;
+    this.autoPolishToggle = document.getElementById('autoPolishToggle') as HTMLInputElement;
 
     this.archiveButton = document.getElementById('archiveButton') as HTMLButtonElement;
     this.archiveModal = document.getElementById('archiveModal') as HTMLDivElement;
@@ -145,9 +145,7 @@ class VoiceNotesApp {
     this.settingsButton = document.getElementById('settingsButton') as HTMLButtonElement;
     this.settingsModal = document.getElementById('settingsModal') as HTMLDivElement;
     this.closeSettingsModalButton = document.getElementById('closeSettingsModalButton') as HTMLButtonElement;
-    this.apiKeyInput = document.getElementById('apiKeyInput') as HTMLInputElement;
-    this.saveApiKeyButton = document.getElementById('saveApiKeyButton') as HTMLButtonElement;
-    this.apiKeyStatus = document.getElementById('apiKeyStatus') as HTMLParagraphElement;
+    // FIX: Removed DOM queries for API key UI elements.
     
     this.copyPolishedNoteButton = document.getElementById('copyPolishedNoteButton') as HTMLButtonElement;
     this.copyRawTranscriptionButton = document.getElementById('copyRawTranscriptionButton') as HTMLButtonElement;
@@ -164,18 +162,32 @@ class VoiceNotesApp {
       this.statusIndicatorDiv = this.recordingInterface.querySelector('.status-indicator') as HTMLDivElement;
     }
 
-    this.initializeApiKey();
+    // FIX: Initialize GoogleGenAI using the API key from environment variables.
+    try {
+      if (process.env.API_KEY) {
+        this.genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      } else {
+        console.error("API key not provided in environment variables.");
+        this.genAI = null;
+      }
+    } catch(e) {
+      console.error("Failed to initialize GoogleGenAI", e);
+      this.genAI = null;
+    }
+
     this.populateLanguageDropdown();
     this.bindEventListeners();
     this.initTheme();
     this.initializePWAInstallHandlers();
+
+    const storedAutoPolish = localStorage.getItem(LOCAL_STORAGE_AUTO_POLISH);
+    this.isAutoPolishEnabled = storedAutoPolish === null ? true : storedAutoPolish === 'true';
+    this.autoPolishToggle.checked = this.isAutoPolishEnabled;
+    
     this.loadNotes();
 
-    if (!this.userApiKey && !localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
-        this.activateInitialApiKeyFocus();
-    } else {
-        this.checkAndSetFocusMode(); 
-    }
+    // FIX: Removed logic related to initial API key setup focus.
+    this.checkAndSetFocusMode(); 
     
     if (this.allNotes.length === 0) {
       this.createNewNote(); 
@@ -184,106 +196,27 @@ class VoiceNotesApp {
       this.loadNoteIntoEditor(lastNote.id); 
     }
     
-    this.updateApiKeyStatusUI();
+    this.updateUiForApiKey();
     this.updateApplyCustomPromptButtonState(); 
   }
 
-  private initializeApiKey(): void {
-    const storedApiKey = localStorage.getItem(LOCAL_STORAGE_API_KEY);
-    if (storedApiKey) {
-      this.userApiKey = storedApiKey;
-      try {
-        this.genAI = new GoogleGenAI({ apiKey: this.userApiKey });
-        if(this.apiKeyInput) this.apiKeyInput.value = this.userApiKey;
-      } catch (error) {
-        console.error("Failed to initialize GoogleGenAI with stored API key:", error);
-        this.genAI = null;
-        this.userApiKey = null;
-        localStorage.removeItem(LOCAL_STORAGE_API_KEY); 
-        localStorage.removeItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE);
-      }
-    } else {
-      this.genAI = null;
-    }
-  }
+  // FIX: Removed initializeApiKey, setApiKey, activate/deactivate InitialApiKeyFocus methods.
+  // The API key is now handled exclusively by environment variables.
 
-  private setApiKey(apiKey: string): void {
-    if (!apiKey.trim()) {
-      this.userApiKey = null;
-      this.genAI = null;
-      localStorage.removeItem(LOCAL_STORAGE_API_KEY);
-      localStorage.removeItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE); 
-      this.updateApiKeyStatusUI("API Key cleared. Please enter a valid key to use AI features.", "warning");
-      if (!localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
-        this.activateInitialApiKeyFocus();
-      } else {
-        this.checkAndSetFocusMode(); 
-      }
-      this.updateApplyCustomPromptButtonState();
-      return;
-    }
-    try {
-      const testGenAI = new GoogleGenAI({ apiKey: apiKey.trim() });
-      this.genAI = testGenAI;
-      this.userApiKey = apiKey.trim();
-      localStorage.setItem(LOCAL_STORAGE_API_KEY, this.userApiKey);
-      
-      if (!localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
-          localStorage.setItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE, 'true');
-      }
-      if (this.isInitialApiKeyFocusActive) {
-          this.deactivateInitialApiKeyFocus();
-      }
-      
-      this.updateApiKeyStatusUI("API Key saved and applied.", "success");
-      this.closeSettingsModal(); 
-    } catch (error) {
-      console.error("Error initializing GoogleGenAI with new API key:", error);
-      this.genAI = null; 
-      this.userApiKey = null; 
-      localStorage.removeItem(LOCAL_STORAGE_API_KEY);
-      localStorage.removeItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE); 
-      this.updateApiKeyStatusUI("Invalid API Key format or other initialization error. Please check your key.", "error");
-      if (!this.isInitialApiKeyFocusActive) {
-          this.activateInitialApiKeyFocus(); 
-      }
-    }
-    this.updateApplyCustomPromptButtonState();
-  }
-
-  private updateApiKeyStatusUI(message?: string, type?: 'success' | 'error' | 'warning' | 'info'): void {
-    if (this.apiKeyStatus) {
-        if (message && type) {
-            this.apiKeyStatus.textContent = message;
-            this.apiKeyStatus.className = `api-key-status ${type}`;
-        } else {
-            if (this.userApiKey && this.genAI) {
-                this.apiKeyStatus.textContent = 'API Key is set and saved in this browser.';
-                this.apiKeyStatus.className = 'api-key-status success';
-            } else {
-                this.apiKeyStatus.textContent = 'API Key not set. AI features are disabled.';
-                this.apiKeyStatus.className = 'api-key-status warning';
-            }
-        }
-    }
-    if (this.recordingStatus && !this.isRecording && !this.isLiveRecordingActive && !this.isInitialApiKeyFocusActive) { 
-        if (!this.genAI || !this.userApiKey) {
-            this.recordingStatus.innerHTML = 'API Key needed for AI features. <button id="openSettingsFromStatus" class="text-button">Set Key</button>';
-            this.recordingStatus.className = 'status-text warning';
-            const openSettingsBtn = document.getElementById('openSettingsFromStatus');
-            if (openSettingsBtn) {
-                openSettingsBtn.addEventListener('click', () => this.openSettingsModal());
-            }
+  // FIX: Replaced updateApiKeyStatusUI with a simpler method to update UI based on API key presence.
+  private updateUiForApiKey(): void {
+    const isApiKeySet = !!this.genAI;
+    if (this.recordingStatus && !this.isRecording && !this.isLiveRecordingActive) { 
+        if (!isApiKeySet) {
+            this.recordingStatus.innerHTML = 'API Key not configured. AI features are disabled.';
+            this.recordingStatus.className = 'status-text error';
         } else {
             this.recordingStatus.textContent = 'Ready to record';
             this.recordingStatus.className = 'status-text';
         }
-    } else if (this.isInitialApiKeyFocusActive && this.recordingStatus) {
-        this.recordingStatus.textContent = 'Please set your API Key to begin.';
-        this.recordingStatus.className = 'status-text info';
     }
     
-    this.recordButton.disabled = !this.genAI || !this.userApiKey;
+    this.recordButton.disabled = !isApiKeySet;
     
     if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) {
         this.renderArchiveList();
@@ -292,26 +225,9 @@ class VoiceNotesApp {
     this.updateApplyCustomPromptButtonState();
   }
 
-  private activateInitialApiKeyFocus(): void {
-    if (this.isInitialApiKeyFocusActive) return;
-    this.isInitialApiKeyFocusActive = true;
-    this.appContainer.classList.add('app-initial-api-focus');
-    this.focusPromptOverlay.classList.remove('hidden');
-    this.updateApiKeyStatusUI(); 
-    this.updateRecordButtonGlowState();
-  }
-
-  private deactivateInitialApiKeyFocus(): void {
-    if (!this.isInitialApiKeyFocusActive) return;
-    this.isInitialApiKeyFocusActive = false;
-    this.appContainer.classList.remove('app-initial-api-focus');
-    this.focusPromptOverlay.classList.add('hidden');
-    this.updateApiKeyStatusUI(); 
-    this.checkAndSetFocusMode(); 
-  }
-
+  // FIX: Simplified updateRecordButtonGlowState to remove dependencies on API key focus state.
   private updateRecordButtonGlowState(): void {
-    const isApiKeySet = !!(this.genAI && this.userApiKey);
+    const isApiKeySet = !!this.genAI;
     const isIdle = !this.isRecording && !this.isLiveRecordingActive;
     const currentNote = this.getCurrentNote();
     const isNoteEmpty = !currentNote || 
@@ -320,15 +236,11 @@ class VoiceNotesApp {
                          !currentNote.polishedNote);
 
     if (this.settingsButton) {
-        if ((this.isInitialApiKeyFocusActive && !isApiKeySet) || (!isApiKeySet && isIdle && !this.isInitialApiKeyFocusActive)) {
-          this.settingsButton.classList.add('settings-needs-glow');
-        } else {
-          this.settingsButton.classList.remove('settings-needs-glow');
-        }
+        this.settingsButton.classList.remove('settings-needs-glow');
     }
     
     if (this.recordButton) {
-        if (isApiKeySet && isIdle && isNoteEmpty && !this.isInitialApiKeyFocusActive) {
+        if (isApiKeySet && isIdle && isNoteEmpty) {
           this.recordButton.classList.add('record-button-ready-glow');
         } else {
           this.recordButton.classList.remove('record-button-ready-glow');
@@ -356,6 +268,7 @@ class VoiceNotesApp {
     this.toggleCustomPromptButton.addEventListener('click', () => this.toggleCustomPromptDisplay());
     this.customPromptTextarea.addEventListener('blur', () => this.handleCustomPromptChange());
     this.applyCustomPromptButton.addEventListener('click', () => this.handleApplyCustomPrompt());
+    this.autoPolishToggle.addEventListener('change', () => this.handleAutoPolishToggle());
     this.editorTitleDiv.addEventListener('blur', () => this.handleTitleChange());
 
     this.archiveButton.addEventListener('click', () => this.openArchiveModal());
@@ -363,7 +276,7 @@ class VoiceNotesApp {
 
     this.settingsButton.addEventListener('click', () => this.openSettingsModal());
     this.closeSettingsModalButton.addEventListener('click', () => this.closeSettingsModal());
-    this.saveApiKeyButton.addEventListener('click', () => this.setApiKey(this.apiKeyInput.value));
+    // FIX: Removed event listener for the save API key button.
 
     this.rawTranscriptionDiv.addEventListener('blur', () => this.handleContentEditableChange('rawTranscription'));
     this.polishedNoteDiv.addEventListener('blur', () => this.handleContentEditableChange('polishedNote'));
@@ -459,9 +372,13 @@ class VoiceNotesApp {
     }
   }
 
+  private handleAutoPolishToggle(): void {
+    this.isAutoPolishEnabled = this.autoPolishToggle.checked;
+    localStorage.setItem(LOCAL_STORAGE_AUTO_POLISH, String(this.isAutoPolishEnabled));
+  }
+
   private toggleCustomPromptDisplay(): void {
     this.customPromptContainer.classList.toggle('hidden');
-    this.applyCustomPromptButton.classList.toggle('hidden', this.customPromptContainer.classList.contains('hidden'));
 
     if (this.customPromptContainer.classList.contains('hidden')) {
         this.toggleCustomPromptButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Edit Custom Prompt';
@@ -485,31 +402,34 @@ class VoiceNotesApp {
 
   private updateApplyCustomPromptButtonState(): void {
     const currentNote = this.getCurrentNote();
-    const isCustomPromptSectionVisible = !this.customPromptContainer.classList.contains('hidden');
     
-    // Ensure visibility is managed by toggleCustomPromptDisplay for the button too
-    // this.applyCustomPromptButton.classList.toggle('hidden', !isCustomPromptSectionVisible);
-
-    const canRepolish = !!(
+    const canPolish = !!(
         this.genAI &&
-        this.userApiKey &&
         currentNote &&
-        currentNote.audioBlobBase64 && // Requires audio
-        currentNote.rawTranscription && // Requires raw transcription to be present
-        isCustomPromptSectionVisible // Button is only active if its section is visible
+        currentNote.rawTranscription &&
+        currentNote.rawTranscription.trim() !== ''
     );
-    this.applyCustomPromptButton.disabled = !canRepolish;
+    this.applyCustomPromptButton.disabled = !canPolish;
+
+    if (currentNote && currentNote.polishedNote && currentNote.polishedNote.trim() !== '') {
+        this.applyCustomPromptButton.innerHTML = '<i class="fas fa-sync-alt"></i> Apply & Re-polish';
+        this.applyCustomPromptButton.title = 'Re-polish note with current custom prompt and language';
+    } else {
+        this.applyCustomPromptButton.innerHTML = '<i class="fas fa-magic"></i> Polish Note';
+        this.applyCustomPromptButton.title = 'Polish this transcription into a note';
+    }
   }
 
   private async handleApplyCustomPrompt(): Promise<void> {
     const currentNote = this.getCurrentNote();
-    if (!this.genAI || !this.userApiKey) {
-        this.updateApiKeyStatusUI("API Key needed to re-polish.", "warning");
-        this.openSettingsModal();
+    // FIX: Simplified API key check.
+    if (!this.genAI) {
+        this.recordingStatus.textContent = 'API Key not configured. Cannot re-polish.';
+        this.recordingStatus.className = 'status-text error';
         return;
     }
-    if (!currentNote || !currentNote.audioBlobBase64 || !currentNote.rawTranscription) {
-        this.recordingStatus.textContent = 'Note must have audio and raw transcription to re-polish.';
+    if (!currentNote || !currentNote.rawTranscription) {
+        this.recordingStatus.textContent = 'Note must have a raw transcription to polish.';
         this.recordingStatus.className = 'status-text warning';
         this.updateApplyCustomPromptButtonState();
         return;
@@ -669,9 +589,10 @@ class VoiceNotesApp {
   }
 
   private async toggleRecording(): Promise<void> {
-    if (!this.genAI || !this.userApiKey) {
-        this.updateApiKeyStatusUI(); 
-        this.openSettingsModal();
+    // FIX: Simplified API key check.
+    if (!this.genAI) {
+        this.recordingStatus.textContent = 'API Key not configured. AI features are disabled.';
+        this.recordingStatus.className = 'status-text error';
         return;
     }
     if (!this.isRecording) {
@@ -779,9 +700,10 @@ class VoiceNotesApp {
   }
 
   private async startRecording(): Promise<void> {
-    if (!this.genAI || !this.userApiKey) { 
-      this.updateApiKeyStatusUI();
-      this.openSettingsModal();
+    // FIX: Simplified API key check.
+    if (!this.genAI) { 
+      this.recordingStatus.textContent = 'API Key not configured. AI features are disabled.';
+      this.recordingStatus.className = 'status-text error';
       return;
     }
     const currentNote = this.getCurrentNote();
@@ -873,9 +795,8 @@ class VoiceNotesApp {
 
   private async processAudio(audioBlob: Blob, noteIdToProcess: string): Promise<void> {
     if (!this.genAI) {
-        this.recordingStatus.textContent = 'API Key not set. Cannot process audio.';
-        this.recordingStatus.className = 'status-text warning';
-        this.openSettingsModal();
+        this.recordingStatus.textContent = 'API Key not configured. Cannot process audio.';
+        this.recordingStatus.className = 'status-text error';
         this.checkAndSetFocusMode();
         return;
     }
@@ -944,9 +865,9 @@ class VoiceNotesApp {
         } catch (parseError) {
             // console.warn('Could not parse detailed error message JSON:', parseError);
         }
+    // FIX: Updated error message for invalid API key, as it can no longer be changed in the UI.
     } else if (typeof displayErrorMessage === 'string' && displayErrorMessage.includes("API key not valid")) {
-        displayErrorMessage = "API Key not valid. Please check your key in Settings.";
-        this.openSettingsModal();
+        displayErrorMessage = "The configured API Key is not valid. Please check the environment configuration.";
     }
     return displayErrorMessage;
   }
@@ -985,10 +906,9 @@ class VoiceNotesApp {
 
   private async getTranscription(base64Audio: string, mimeType: string, noteId: string): Promise<void> {
     if (!this.genAI) {
-        this.recordingStatus.textContent = 'API Key not set for transcription.';
-        this.recordingStatus.className = 'status-text warning';
+        this.recordingStatus.textContent = 'API Key not configured for transcription.';
+        this.recordingStatus.className = 'status-text error';
         this.checkAndSetFocusMode();
-        this.openSettingsModal();
         return;
     }
     const noteForTranscription = this.allNotes.find(n => n.id === noteId);
@@ -1028,9 +948,16 @@ class VoiceNotesApp {
              this.checkAndSetFocusMode();
              this.updateApplyCustomPromptButtonState(); // In case current note changed
         }
-        this.recordingStatus.textContent = 'Transcription complete. Polishing note...';
-        this.recordingStatus.className = 'status-text';
-        await this.getPolishedNote(noteId);
+        
+        if (this.isAutoPolishEnabled) {
+          this.recordingStatus.textContent = 'Transcription complete. Polishing note...';
+          this.recordingStatus.className = 'status-text';
+          await this.getPolishedNote(noteId);
+        } else {
+          this.recordingStatus.textContent = 'Transcription complete. Auto-polish is off.';
+          this.recordingStatus.className = 'status-text success';
+          this.checkAndSetFocusMode();
+        }
       } else {
         this.recordingStatus.textContent = 'Transcription failed or returned empty.';
         this.recordingStatus.className = 'status-text warning';
@@ -1063,10 +990,9 @@ class VoiceNotesApp {
 
   private async getPolishedNote(noteId: string, overrideTargetLanguage?: string, overrideCustomPrompt?: string): Promise<void> {
     if (!this.genAI) {
-        this.recordingStatus.textContent = 'API Key not set for polishing.';
-        this.recordingStatus.className = 'status-text warning';
+        this.recordingStatus.textContent = 'API Key not configured for polishing.';
+        this.recordingStatus.className = 'status-text error';
         this.checkAndSetFocusMode();
-        this.openSettingsModal();
         return;
     }
     const noteToPolish = this.allNotes.find(n => n.id === noteId);
@@ -1246,18 +1172,12 @@ ${noteToPolish.rawTranscription}`;
     this.saveNotes();
     this.displayNote(newNote.id); // This will call updateApplyCustomPromptButtonState
     
-    this.updateApiKeyStatusUI(); 
+    this.updateUiForApiKey(); 
     this.checkAndSetFocusMode(); 
   }
 
+  // FIX: Simplified checkAndSetFocusMode by removing all API key focus logic.
   private checkAndSetFocusMode(): void {
-    if (this.isInitialApiKeyFocusActive) {
-        this.focusPromptOverlay.classList.remove('hidden');
-        this.appContainer.classList.add('app-initial-api-focus');
-        this.updateRecordButtonGlowState();
-        return;
-    }
-
     this.appContainer.classList.remove('app-initial-api-focus');
     this.appContainer.classList.remove('app-focus-mode'); 
     this.focusPromptOverlay.classList.add('hidden'); 
@@ -1275,30 +1195,20 @@ ${noteToPolish.rawTranscription}`;
     this.archiveModal.classList.add('hidden');
   }
 
+  // FIX: Simplified openSettingsModal to only handle PWA install UI.
   private openSettingsModal(): void {
-    if (this.userApiKey) this.apiKeyInput.value = this.userApiKey;
     if (this.deferredInstallPrompt && this.installAppSection) {
         this.installAppSection.classList.remove('hidden');
     } else if (this.installAppSection) {
         this.installAppSection.classList.add('hidden');
     }
-    this.updateApiKeyStatusUI(); 
     this.settingsModal.classList.remove('hidden');
   }
 
+  // FIX: Simplified closeSettingsModal by removing API key related logic.
   private closeSettingsModal(): void {
     this.settingsModal.classList.add('hidden');
-    this.updateApiKeyStatusUI(); 
-    
-    if (!this.userApiKey && !localStorage.getItem(LOCAL_STORAGE_INITIAL_API_SETUP_COMPLETE)) {
-        if (!this.isInitialApiKeyFocusActive) { 
-          this.activateInitialApiKeyFocus();
-        }
-    } else if (this.isInitialApiKeyFocusActive && this.userApiKey) {
-        this.deactivateInitialApiKeyFocus();
-    } else {
-        this.checkAndSetFocusMode(); 
-    }
+    this.checkAndSetFocusMode();
   }
 
 
@@ -1329,7 +1239,7 @@ ${noteToPolish.rawTranscription}`;
         return;
     }
     
-    const isApiKeySet = !!(this.genAI && this.userApiKey);
+    const isApiKeySet = !!this.genAI;
 
     sortedNotes.forEach(note => {
       try {
@@ -1395,8 +1305,9 @@ ${noteToPolish.rawTranscription}`;
                 langSelect.disabled = true;
             }
             repolishButton.addEventListener('click', async () => {
-              if (!this.genAI || !this.userApiKey) {
-                this.openSettingsModal();
+              if (!this.genAI) {
+                this.recordingStatus.textContent = 'API Key not configured. Cannot re-polish.';
+                this.recordingStatus.className = 'status-text error';
                 return;
               }
               if (!note.rawTranscription || !note.audioBlobBase64){
@@ -1419,7 +1330,7 @@ ${noteToPolish.rawTranscription}`;
               await this.getPolishedNote(note.id, newLang, customPromptForRepolish);
               
               repolishButton.textContent = 'Re-polish';
-              if (this.genAI && this.userApiKey && note.rawTranscription && note.audioBlobBase64) { 
+              if (this.genAI && note.rawTranscription && note.audioBlobBase64) { 
                 repolishButton.disabled = false;
                 langSelect.disabled = false;
               }
