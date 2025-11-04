@@ -530,10 +530,13 @@ body.light-mode .active-tab-indicator {
 }
 
 .custom-prompt-container {
-    margin-top: 0; /* Adjusted as gap is handled by flex parent */
+    margin-top: 0;
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background-color: var(--color-surface);
 }
 .custom-prompt-container.hidden {
     display: none;
@@ -544,17 +547,19 @@ body.light-mode .active-tab-indicator {
     min-height: 80px;
     background-color: var(--color-bg-alt);
     color: var(--color-text);
-    border: none;
+    border: 1px solid var(--color-border);
     padding: 12px;
     font-family: var(--font-primary);
-    font-size: 16px; /* Changed from 14px to 16px */
+    font-size: 16px;
     line-height: 1.5;
     resize: vertical;
     outline: none;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: none;
+    border-radius: 6px;
+    margin-bottom: 12px;
 }
 body.light-mode #customPromptTextarea {
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: none;
 }
 
 .apply-prompt-button {
@@ -568,7 +573,7 @@ body.light-mode #customPromptTextarea {
     font-family: var(--font-primary);
     cursor: pointer;
     transition: var(--transition-fast) all;
-    align-self: center;
+    align-self: flex-end;
 }
 .apply-prompt-button i {
     margin-right: 8px;

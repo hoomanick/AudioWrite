@@ -21,10 +21,6 @@ export default defineConfig(({ mode }) => {
 
     return {
       base: base,
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
       resolve: {
         alias: {
           // FIX: Replaced __dirname with import.meta.url to be compatible with ES modules.
