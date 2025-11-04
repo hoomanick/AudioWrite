@@ -374,6 +374,7 @@ class VoiceNotesApp {
     this.newButton.addEventListener('click', () => this.createNewNote());
     this.themeToggleButton.addEventListener('click', () => this.toggleTheme());
     window.addEventListener('resize', this.handleResize.bind(this));
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 
     this.outputLanguageSelect.addEventListener('change', () => this.handleOutputLanguageChange());
     this.toggleCustomPromptButton.addEventListener('click', () => this.toggleCustomPromptDisplay());
@@ -400,6 +401,20 @@ class VoiceNotesApp {
     }
     if (this.dismissIosInstallBannerButton) {
         this.dismissIosInstallBannerButton.addEventListener('click', () => this.dismissIosBanner());
+    }
+  }
+
+  /**
+   * Safety net for iOS/mobile recording.
+   * If the page is hidden (e.g., screen lock, user switches tabs), the browser
+   * will suspend microphone access, silently killing the recording. This listener
+   * detects that and gracefully stops the recording, ensuring the audio captured
+   * up to that point is saved and processed.
+   */
+  private async handleVisibilityChange(): Promise<void> {
+    if (document.visibilityState === 'hidden' && this.isRecording) {
+      console.log('Page became hidden during recording. Automatically stopping to preserve data.');
+      await this.stopRecording();
     }
   }
 
@@ -430,7 +445,7 @@ class VoiceNotesApp {
         const { outcome } = await this.deferredInstallPrompt.userChoice;
         console.log(`User response to the install prompt: ${outcome}`);
       } catch (error) {
-        console.error('Error handling install prompt choice:', error);
+        console.error("Error showing install prompt:", error);
       }
       this.deferredInstallPrompt = null; 
     }
@@ -442,903 +457,533 @@ class VoiceNotesApp {
       sessionStorage.setItem(SESSION_STORAGE_IOS_A2HS_DISMISSED, 'true');
     }
   }
-
-
-  private async handleTitleChange(): Promise<void> {
-    const currentNote = this.getCurrentNote();
-    if (currentNote && this.editorTitleDiv.textContent !== currentNote.title) {
-        currentNote.title = this.editorTitleDiv.textContent || 'Untitled Note';
-        await this.saveNote(currentNote);
-        if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) {
-            this.renderArchiveList();
-        }
-    }
-  }
-
-  private async handleContentEditableChange(type: 'rawTranscription' | 'polishedNote'): Promise<void> {
-    const currentNote = this.getCurrentNote();
-    if (!currentNote) return;
-
-    const div = type === 'rawTranscription' ? this.rawTranscriptionDiv : this.polishedNoteDiv;
-    const currentText = div.id === 'polishedNote' ? div.innerHTML : div.textContent || ''; 
-    
-    let changed = false;
-    if (type === 'rawTranscription' && currentText !== currentNote.rawTranscription) {
-        currentNote.rawTranscription = currentText;
-        changed = true;
-    } else if (type === 'polishedNote' && currentText !== currentNote.polishedNote) {
-        currentNote.polishedNote = currentText; 
-        changed = true;
-    } 
-    
-    if (changed) {
-        await this.saveNote(currentNote);
-        this.checkAndSetFocusMode(); 
-        this.updateApplyCustomPromptButtonState(); // Raw transcription might have changed
-    }
-  }
-
-  private async handleOutputLanguageChange(): Promise<void> {
-    const currentNote = this.getCurrentNote();
-    if (currentNote) {
-      currentNote.targetLanguage = this.outputLanguageSelect.value;
-      await this.saveNote(currentNote);
-      // No direct re-polish, user must click "Apply & Re-polish"
-    }
-  }
-
-  private handleAutoPolishToggle(): void {
-    this.isAutoPolishEnabled = this.autoPolishToggle.checked;
-    localStorage.setItem(LOCAL_STORAGE_AUTO_POLISH, String(this.isAutoPolishEnabled));
-  }
-
-  private toggleCustomPromptDisplay(): void {
-    this.customPromptContainer.classList.toggle('hidden');
-
-    if (this.customPromptContainer.classList.contains('hidden')) {
-        this.toggleCustomPromptButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Edit Custom Prompt';
-        this.toggleCustomPromptButton.title = 'Show custom prompt options';
-    } else {
-        this.toggleCustomPromptButton.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Custom Prompt';
-        this.toggleCustomPromptButton.title = 'Hide custom prompt options';
-        this.customPromptTextarea.focus();
-    }
-    this.updateApplyCustomPromptButtonState();
-  }
   
-  private async handleCustomPromptChange(): Promise<void> {
-    const currentNote = this.getCurrentNote();
-    if (currentNote) {
-        currentNote.customPolishingPrompt = this.customPromptTextarea.value.trim() || undefined;
-        await this.saveNote(currentNote);
-        // No direct re-polish, user must click "Apply & Re-polish"
-    }
-  }
-
-  private updateApplyCustomPromptButtonState(): void {
-    const currentNote = this.getCurrentNote();
-    
-    const canPolish = !!(
-        this.userApiKey &&
-        this.genAI &&
-        currentNote &&
-        currentNote.rawTranscription &&
-        currentNote.rawTranscription.trim() !== ''
-    );
-    this.applyCustomPromptButton.disabled = !canPolish;
-
-    if (currentNote && currentNote.polishedNote && currentNote.polishedNote.trim() !== '') {
-        this.applyCustomPromptButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Re-polish with Prompt';
-        this.applyCustomPromptButton.title = 'Re-polish note with the current custom prompt and language';
-    } else {
-        this.applyCustomPromptButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Polish with Prompt';
-        this.applyCustomPromptButton.title = 'Polish this transcription using the custom prompt';
-    }
-  }
-
-  private async handleApplyCustomPrompt(): Promise<void> {
-    const currentNote = this.getCurrentNote();
-    if (!this.userApiKey || !this.genAI) {
-        this.recordingStatus.textContent = 'API Key is not set. Go to Settings to add one.';
-        this.recordingStatus.className = 'status-text error';
-        return;
-    }
-    if (!currentNote || !currentNote.rawTranscription) {
-        this.recordingStatus.textContent = 'Note must have a raw transcription to polish.';
-        this.recordingStatus.className = 'status-text warning';
-        this.updateApplyCustomPromptButtonState();
-        return;
-    }
-
-    const targetLanguage = this.outputLanguageSelect.value;
-    const customPrompt = this.customPromptTextarea.value.trim();
-
-    // Update note object with new settings for this re-polish
-    currentNote.targetLanguage = targetLanguage;
-    currentNote.customPolishingPrompt = customPrompt || undefined;
-    
-    const originalButtonText = this.applyCustomPromptButton.innerHTML;
-    this.applyCustomPromptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Polishing...';
-    this.applyCustomPromptButton.disabled = true;
-    this.outputLanguageSelect.disabled = true;
-    this.customPromptTextarea.disabled = true;
-    this.toggleCustomPromptButton.disabled = true;
-
-    try {
-        await this.getPolishedNote(currentNote.id, targetLanguage, customPrompt);
-    } catch (error) {
-        console.error("Error during handleApplyCustomPrompt:", error);
-    } finally {
-        this.applyCustomPromptButton.innerHTML = originalButtonText;
-        this.updateApplyCustomPromptButtonState(); 
-        this.outputLanguageSelect.disabled = false;
-        this.customPromptTextarea.disabled = false;
-        this.toggleCustomPromptButton.disabled = false;
-    }
-  }
-
-
-  private formatTimestamp(timestamp: number): string {
-    return new Date(timestamp).toLocaleString(undefined, { 
-        dateStyle: 'medium', 
-        timeStyle: 'short' 
-    });
-  }
-
-  private displayNote(noteId: string | null): void {
-    if (!noteId) {
-        this.createNewNote(); 
-        return;
-    }
-    const note = this.allNotes.find(n => n.id === noteId);
-    if (!note) {
-      console.error(`Note with ID ${noteId} not found.`);
-      this.createNewNote();
-      return;
-    }
-
-    this.currentNoteId = note.id;
-
-    this.editorTitleDiv.textContent = note.title;
-    this.currentNoteTimestampDisplay.textContent = `Created: ${this.formatTimestamp(note.timestamp)}`;
-
-    const rawPlaceholder = this.rawTranscriptionDiv.getAttribute('placeholder') || '';
-    this.rawTranscriptionDiv.textContent = note.rawTranscription || rawPlaceholder;
-    if (note.rawTranscription && note.rawTranscription !== rawPlaceholder) this.rawTranscriptionDiv.classList.remove('placeholder-active');
-    else this.rawTranscriptionDiv.classList.add('placeholder-active');
-
-    const polishedPlaceholder = this.polishedNoteDiv.getAttribute('placeholder') || '';
-    this.polishedNoteDiv.innerHTML = note.polishedNote || polishedPlaceholder;
-    if (note.polishedNote && note.polishedNote !== polishedPlaceholder) this.polishedNoteDiv.classList.remove('placeholder-active');
-    else this.polishedNoteDiv.classList.add('placeholder-active');
-    
-    this.outputLanguageSelect.value = note.targetLanguage || 'en';
-    this.customPromptTextarea.value = note.customPolishingPrompt || '';
-
-    this.checkAndSetFocusMode();
-    this.updateApplyCustomPromptButtonState();
-  }
-  
-  private getCurrentNote(): Note | null {
-    if (!this.currentNoteId) return null;
-    return this.allNotes.find(n => n.id === this.currentNoteId) || null;
-  }
-
-  private async loadNotes(): Promise<void> {
-    try {
-      this.allNotes = await getAllNotesFromDB();
-    } catch (error) {
-      console.error('Error loading notes from IndexedDB:', error);
-      this.allNotes = [];
-    }
-  }
-
-  private async saveNote(note: Note): Promise<void> {
-    if (!note) return;
-    try {
-        await saveNoteToDB(note);
-    } catch (error) {
-        console.error('Error saving note to IndexedDB:', error);
-        if (this.recordingStatus) {
-            this.recordingStatus.textContent = 'Error: Could not save note data.';
-            this.recordingStatus.className = 'status-text error';
-        }
-    }
-  }
-
   private handleResize(): void {
-    if (this.isRecording && this.liveWaveformCanvas && this.liveWaveformCanvas.style.display === 'block') {
-      requestAnimationFrame(() => { this.setupCanvasDimensions(); });
+    if (this.liveWaveformCanvas && this.liveWaveformCtx && this.isLiveRecordingActive) {
+      this.setupWaveformCanvas();
     }
   }
-
-  private setupCanvasDimensions(): void {
-    if (!this.liveWaveformCanvas || !this.liveWaveformCtx) return;
-    const canvas = this.liveWaveformCanvas; const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect(); const cssWidth = rect.width; const cssHeight = rect.height;
-    canvas.width = Math.round(cssWidth * dpr); canvas.height = Math.round(cssHeight * dpr);
-    this.liveWaveformCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  private initTheme(): void {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-mode');
-      this.themeToggleIcon.classList.remove('fa-sun'); this.themeToggleIcon.classList.add('fa-moon');
-    } else {
-      document.body.classList.remove('light-mode');
-      this.themeToggleIcon.classList.remove('fa-moon'); this.themeToggleIcon.classList.add('fa-sun');
-    }
-  }
-
-  private toggleTheme(): void {
-    document.body.classList.toggle('light-mode');
-    if (document.body.classList.contains('light-mode')) {
-      localStorage.setItem('theme', 'light');
-      this.themeToggleIcon.classList.remove('fa-sun'); this.themeToggleIcon.classList.add('fa-moon');
-    } else {
-      localStorage.setItem('theme', 'dark');
-      this.themeToggleIcon.classList.remove('fa-moon'); this.themeToggleIcon.classList.add('fa-sun');
-    }
-  }
-
-  private async toggleRecording(): Promise<void> {
-    if (!this.userApiKey || !this.genAI) {
-        this.recordingStatus.textContent = 'API Key is not set. Go to Settings to add one.';
-        this.recordingStatus.className = 'status-text error';
-        this.openSettingsModal();
-        return;
-    }
-    if (!this.isRecording) {
-      await this.startRecording();
-    } else {
-      await this.stopRecording();
-    }
-  }
-
-  private setupAudioVisualizer(): void {
-    if (!this.stream || this.audioContext) return;
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const source = this.audioContext.createMediaStreamSource(this.stream);
-    this.analyserNode = this.audioContext.createAnalyser();
-    this.analyserNode.fftSize = 256; this.analyserNode.smoothingTimeConstant = 0.75;
-    const bufferLength = this.analyserNode.frequencyBinCount;
-    this.waveformDataArray = new Uint8Array(bufferLength);
-    source.connect(this.analyserNode);
-  }
-
-  private drawLiveWaveform(): void {
-    if (!this.analyserNode || !this.waveformDataArray || !this.liveWaveformCtx || !this.liveWaveformCanvas || !this.isRecording) {
-      if (this.waveformDrawingId) cancelAnimationFrame(this.waveformDrawingId);
-      this.waveformDrawingId = null; return;
-    }
-    this.waveformDrawingId = requestAnimationFrame(() => this.drawLiveWaveform());
-    this.analyserNode.getByteFrequencyData(this.waveformDataArray);
-    const ctx = this.liveWaveformCtx; const canvas = this.liveWaveformCanvas;
-    const logicalWidth = canvas.clientWidth; const logicalHeight = canvas.clientHeight;
-    ctx.clearRect(0, 0, logicalWidth, logicalHeight);
-    const bufferLength = this.analyserNode.frequencyBinCount; const numBars = Math.floor(bufferLength * 0.5);
-    if (numBars === 0) return;
-    const totalBarPlusSpacingWidth = logicalWidth / numBars;
-    const barWidth = Math.max(1, Math.floor(totalBarPlusSpacingWidth * 0.7));
-    const barSpacing = Math.max(0, Math.floor(totalBarPlusSpacingWidth * 0.3));
-    let x = 0;
-    const recordingColor = getComputedStyle(document.documentElement).getPropertyValue('--color-recording').trim() || '#ff3b30';
-    ctx.fillStyle = recordingColor;
-    for (let i = 0; i < numBars; i++) {
-      if (x >= logicalWidth) break;
-      const dataIndex = Math.floor(i * (bufferLength / numBars));
-      const barHeightNormalized = this.waveformDataArray[dataIndex] / 255.0;
-      let barHeight = barHeightNormalized * logicalHeight;
-      if (barHeight < 1 && barHeight > 0) barHeight = 1; barHeight = Math.round(barHeight);
-      const y = Math.round((logicalHeight - barHeight) / 2);
-      ctx.fillRect(Math.floor(x), y, barWidth, barHeight);
-      x += barWidth + barSpacing;
-    }
-  }
-
-  private updateLiveTimer(): void {
-    if (!this.isRecording || !this.liveRecordingTimerDisplay) return;
-    const now = Date.now(); const elapsedMs = now - this.recordingStartTime;
-    const totalSeconds = Math.floor(elapsedMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60); const seconds = totalSeconds % 60;
-    const hundredths = Math.floor((elapsedMs % 1000) / 10);
-    this.liveRecordingTimerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
-  }
-
-  private startLiveDisplay(): void {
-    if (!this.recordingInterface || !this.liveRecordingTitle || !this.liveWaveformCanvas || !this.liveRecordingTimerDisplay) return;
-    this.isLiveRecordingActive = true;
-    this.appContainer.classList.add('app-is-live-recording');
-    this.recordingInterface.classList.add('is-live');
-    this.liveRecordingTitle.style.display = 'block'; this.liveWaveformCanvas.style.display = 'block'; this.liveRecordingTimerDisplay.style.display = 'block';
-    this.setupCanvasDimensions();
-    if (this.statusIndicatorDiv) this.statusIndicatorDiv.style.display = 'none';
-    const iconElement = this.recordButton.querySelector('.record-button-inner i') as HTMLElement;
-    if (iconElement) { iconElement.classList.remove('fa-microphone'); iconElement.classList.add('fa-stop');}
-    
-    const currentNote = this.getCurrentNote();
-    const noteTitle = currentNote?.title || 'Untitled Note';
-    const placeholder = this.editorTitleDiv.getAttribute('placeholder') || 'Untitled Note';
-    this.liveRecordingTitle.textContent = (noteTitle && noteTitle !== placeholder) ? noteTitle : 'New Recording';
-    
-    this.setupAudioVisualizer(); this.drawLiveWaveform();
-    this.recordingStartTime = Date.now(); this.updateLiveTimer();
-    if (this.timerIntervalId) clearInterval(this.timerIntervalId);
-    this.timerIntervalId = window.setInterval(() => this.updateLiveTimer(), 50);
-    this.checkAndSetFocusMode(); 
-  }
-
-  private stopLiveDisplay(): void {
-    this.isLiveRecordingActive = false;
-    this.appContainer.classList.remove('app-is-live-recording');
-    if (!this.recordingInterface || !this.liveRecordingTitle || !this.liveWaveformCanvas || !this.liveRecordingTimerDisplay) {
-      if (this.recordingInterface) this.recordingInterface.classList.remove('is-live'); 
-      this.checkAndSetFocusMode();
-      return;
-    }
-    this.recordingInterface.classList.remove('is-live');
-    this.liveRecordingTitle.style.display = 'none'; this.liveWaveformCanvas.style.display = 'none'; this.liveRecordingTimerDisplay.style.display = 'none';
-    if (this.statusIndicatorDiv) this.statusIndicatorDiv.style.display = 'block';
-    const iconElement = this.recordButton.querySelector('.record-button-inner i') as HTMLElement;
-    if (iconElement) { iconElement.classList.remove('fa-stop'); iconElement.classList.add('fa-microphone');}
-    if (this.waveformDrawingId) { cancelAnimationFrame(this.waveformDrawingId); this.waveformDrawingId = null; }
-    if (this.timerIntervalId) { clearInterval(this.timerIntervalId); this.timerIntervalId = null; }
-    if (this.liveWaveformCtx && this.liveWaveformCanvas) { this.liveWaveformCtx.clearRect(0, 0, this.liveWaveformCanvas.width, this.liveWaveformCanvas.height); }
-    if (this.audioContext) {
-      if (this.audioContext.state !== 'closed') { this.audioContext.close().catch(e => console.warn('Error closing audio context', e));}
-      this.audioContext = null;
-    }
-    this.analyserNode = null; this.waveformDataArray = null;
-    this.checkAndSetFocusMode(); 
-  }
-
-  private async startRecording(): Promise<void> {
-    if (!this.userApiKey || !this.genAI) { 
-        this.recordingStatus.textContent = 'API Key is not set. Go to Settings to add one.';
-        this.recordingStatus.className = 'status-text error';
-        this.openSettingsModal();
-        return; 
-    }
-    const currentNote = this.getCurrentNote();
-    if (!currentNote) {
-        this.recordingStatus.textContent = 'Error: No current note selected. Please create a new note.';
-        this.recordingStatus.className = 'status-text error';
-        return;
-    }
-    currentNote.audioBlob = undefined;
-    currentNote.audioMimeType = undefined;
-    currentNote.rawTranscription = ''; 
-    currentNote.polishedNote = '';
-    this.displayNote(currentNote.id);
-    await this.saveNote(currentNote);
-
-    this.appContainer.classList.remove('app-initial-api-focus'); 
-    this.appContainer.classList.remove('app-focus-mode'); 
-    this.focusPromptOverlay.classList.add('hidden');
-
-    try {
-      this.audioChunks = [];
-      if (this.stream) { this.stream.getTracks().forEach(track => track.stop()); this.stream = null; }
-      if (this.audioContext && this.audioContext.state !== 'closed') { await this.audioContext.close(); this.audioContext = null; }
-      this.recordingStatus.textContent = 'Requesting microphone access...';
-      this.recordingStatus.className = 'status-text';
-      try {
-        this.stream = await navigator.mediaDevices.getUserMedia({audio: true});
-      } catch (err) {
-        console.error('Failed with basic constraints:', err);
-        this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }});
-      }
-
-      if ('wakeLock' in navigator) {
-        try {
-          this.wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
-          this.wakeLockSentinel.addEventListener('release', () => {
-            console.log('Screen Wake Lock was released automatically.');
-          });
-          console.log('Screen Wake Lock is active.');
-        } catch (err: any) {
-          console.warn(`Failed to acquire screen wake lock: ${err.name}, ${err.message}`);
-        }
-      }
-
-      try {
-        this.mediaRecorder = new MediaRecorder(this.stream, { mimeType: 'audio/webm' });
-      } catch (e) {
-        console.warn('audio/webm not supported, trying default:', e);
-        this.mediaRecorder = new MediaRecorder(this.stream);
-      }
-
-      const noteIdForThisRecording = currentNote.id; 
-
-      this.mediaRecorder.ondataavailable = event => { if (event.data && event.data.size > 0) this.audioChunks.push(event.data); };
-      this.mediaRecorder.onstop = async () => {
-        if (this.wakeLockSentinel) {
-            await this.wakeLockSentinel.release();
-            this.wakeLockSentinel = null;
-            console.log('Screen Wake Lock released.');
-        }
-
-        this.stopLiveDisplay();
-        if (this.audioChunks.length > 0) {
-          const audioBlob = new Blob(this.audioChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
-          this.processAudio(audioBlob, noteIdForThisRecording).catch(err => {
-            console.error('Error processing audio:', err);
-            this.recordingStatus.textContent = 'Error processing recording';
-            this.recordingStatus.className = 'status-text error';
-            this.checkAndSetFocusMode(); 
-          });
-        } else { 
-            this.recordingStatus.textContent = 'No audio data captured. Please try again.'; 
-            this.recordingStatus.className = 'status-text warning';
-            this.checkAndSetFocusMode(); 
-        }
-        if (this.stream) { this.stream.getTracks().forEach(track => { track.stop(); }); this.stream = null; }
-      };
-      this.mediaRecorder.start(); this.isRecording = true;
-      this.recordButton.classList.add('recording'); this.recordButton.setAttribute('title', 'Stop Recording');
-      this.startLiveDisplay();
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      
-      if (this.wakeLockSentinel) {
-        this.wakeLockSentinel.release().then(() => {
-          this.wakeLockSentinel = null;
-          console.log('Screen Wake Lock released due to recording start error.');
-        });
-      }
-
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorName = error instanceof Error ? error.name : 'Unknown';
-      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
-        this.recordingStatus.textContent = 'Microphone permission denied. Check browser settings.';
-      } else if (errorName === 'NotFoundError' || (errorName === 'DOMException' && errorMessage.includes('Requested device not found'))) {
-        this.recordingStatus.textContent = 'No microphone found. Please connect a microphone.';
-      } else if (errorName === 'NotReadableError' || errorName === 'AbortError' || (errorName === 'DOMException' && errorMessage.includes('Failed to allocate audiosource'))) {
-        this.recordingStatus.textContent = 'Cannot access microphone. It may be in use.';
-      } else { this.recordingStatus.textContent = `Error: ${errorMessage}`; }
-      this.recordingStatus.className = 'status-text error';
-      this.isRecording = false;
-      if (this.stream) { this.stream.getTracks().forEach(track => track.stop()); this.stream = null; }
-      this.recordButton.classList.remove('recording'); this.recordButton.setAttribute('title', 'Start Recording');
-      this.stopLiveDisplay(); 
-    }
-  }
-
-  private async stopRecording(): Promise<void> {
-    if (this.mediaRecorder && this.isRecording) {
-      try { this.mediaRecorder.stop(); } catch (e) { console.error('Error stopping MediaRecorder:', e); this.stopLiveDisplay(); }
-      this.isRecording = false;
-      this.recordButton.classList.remove('recording'); this.recordButton.setAttribute('title', 'Start Recording');
-      this.recordingStatus.textContent = 'Processing audio...';
-      this.recordingStatus.className = 'status-text';
-    } else { if (!this.isRecording) this.stopLiveDisplay(); }
-  }
-
-  private async processAudio(audioBlob: Blob, noteIdToProcess: string): Promise<void> {
-    const noteForProcessing = this.allNotes.find(n => n.id === noteIdToProcess);
-    if (!noteForProcessing) {
-        this.recordingStatus.textContent = 'Error: Original note for processing not found.';
-        this.recordingStatus.className = 'status-text error';
-        this.checkAndSetFocusMode();
-        return;
-    }
-    if (audioBlob.size === 0) {
-      this.recordingStatus.textContent = 'No audio data captured. Please try again.';
-      this.recordingStatus.className = 'status-text warning';
-      this.checkAndSetFocusMode();
-      return;
-    }
-
-    try {
-      noteForProcessing.audioBlob = audioBlob;
-      noteForProcessing.audioMimeType = this.mediaRecorder?.mimeType || 'audio/webm';
-      await this.saveNote(noteForProcessing);
-
-      if (this.currentNoteId === noteIdToProcess) {
-        this.displayNote(noteIdToProcess);
-      }
-
-      await this.transcribeNote(noteIdToProcess);
-
-    } catch (error) {
-      console.error('Error in processAudio:', error);
-      this.recordingStatus.textContent = 'Error saving recording. Please try again.';
-      this.recordingStatus.className = 'status-text error';
-      this.checkAndSetFocusMode();
-    }
-  }
-
-  private async transcribeNote(noteId: string): Promise<void> {
-    if (!this.userApiKey || !this.genAI) {
-      this.recordingStatus.textContent = 'API Key is not set. Cannot transcribe audio.';
-      this.recordingStatus.className = 'status-text error';
-      return;
-    }
-
-    const noteToTranscribe = this.allNotes.find(n => n.id === noteId);
-    if (!noteToTranscribe || !noteToTranscribe.audioBlob) {
-      const errorMsg = 'Error: Note or its audio not found for transcription.';
-      this.recordingStatus.textContent = errorMsg;
-      this.recordingStatus.className = 'status-text error';
-      console.error(errorMsg, `Note ID: ${noteId}`);
-      return;
-    }
-
-    const archiveItem = document.querySelector(`.archive-item[data-note-id="${noteId}"]`);
-    const transcribeButton = archiveItem?.querySelector('.transcribe-note') as HTMLButtonElement | null;
-    if (transcribeButton) {
-      transcribeButton.textContent = 'Transcribing...';
-      transcribeButton.disabled = true;
-    }
-
-    this.recordingStatus.textContent = 'Converting audio...';
-    this.recordingStatus.className = 'status-text';
-
-    try {
-      const reader = new FileReader();
-      const readResult = new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-          try {
-            const base64data = reader.result as string;
-            const base64Audio = base64data.split(',')[1];
-            resolve(base64Audio);
-          } catch (err) {
-            reject(err);
-          }
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(noteToTranscribe.audioBlob!);
-      });
-
-      const base64Audio = await readResult;
-      if (!base64Audio) throw new Error('Failed to convert audio to base64');
-
-      await this.getTranscription(base64Audio, noteToTranscribe.audioMimeType!, noteId);
-
-    } catch (error) {
-      console.error('Error during transcription process:', error);
-      const errorMsg = 'Error processing audio for transcription.';
-      this.recordingStatus.textContent = errorMsg;
-      this.recordingStatus.className = 'status-text error';
-      noteToTranscribe.rawTranscription = errorMsg;
-      await this.saveNote(noteToTranscribe);
-      
-      if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) {
-        this.renderArchiveList();
-      }
-      this.updateApplyCustomPromptButtonState();
-    }
-  }
-
-
-  private formatApiErrorMessage(error: any): string {
-    let displayErrorMessage = error instanceof Error ? error.message : String(error);
-    const rpcErrorPrefixPattern = /^got status: \d{3} \w+\. /i;
-
-    if (typeof displayErrorMessage === 'string' && rpcErrorPrefixPattern.test(displayErrorMessage)) {
-        try {
-            const jsonString = displayErrorMessage.replace(rpcErrorPrefixPattern, '');
-            const parsedJson = JSON.parse(jsonString);
-            if (parsedJson.error && parsedJson.error.message) {
-                displayErrorMessage = `Service Error: ${parsedJson.error.message} (Code: ${parsedJson.error.code || 'N/A'})`;
-            }
-        } catch (parseError) {
-            // console.warn('Could not parse detailed error message JSON:', parseError);
-        }
-    } else if (typeof displayErrorMessage === 'string' && displayErrorMessage.includes("API key not valid")) {
-        displayErrorMessage = "The API Key is not valid. Please check it in Settings.";
-        this.openSettingsModal();
-    }
-    return displayErrorMessage;
-  }
-
-  private async retryWithBackoff<T>(
-    fn: () => Promise<T>,
-    retries = 3,
-    delay = 2000,
-    onRetry?: (attempt: number, error: any) => void
-  ): Promise<T> {
-    let attempt = 1;
-    while (attempt <= retries) {
-      try {
-        return await fn();
-      } catch (error: any) {
-        if (attempt === retries) {
-          throw error;
-        }
-        
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes("503") || errorMessage.toLowerCase().includes("overloaded")) {
-             if (onRetry) {
-                onRetry(attempt, error);
-            }
-            const jitter = Math.random() * 500;
-            const backoffTime = delay * Math.pow(2, attempt - 1) + jitter;
-            await new Promise(resolve => setTimeout(resolve, backoffTime));
-            attempt++;
-        } else {
-            throw error;
-        }
-      }
-    }
-    throw new Error('Retry logic failed unexpectedly.');
-  }
-
-  private async getTranscription(base64Audio: string, mimeType: string, noteId: string): Promise<void> {
-    if (!this.userApiKey || !this.genAI) {
-        this.recordingStatus.textContent = 'API Key not set for transcription.';
-        this.recordingStatus.className = 'status-text error';
-        this.checkAndSetFocusMode();
-        return;
-    }
-    const noteForTranscription = this.allNotes.find(n => n.id === noteId);
-    if (!noteForTranscription) {
-        this.recordingStatus.textContent = 'Error: Note not found for transcription.';
-        this.recordingStatus.className = 'status-text error';
-        this.checkAndSetFocusMode();
-        return;
-    }
-
-    try {
-      this.recordingStatus.textContent = 'Getting transcription...';
-      this.recordingStatus.className = 'status-text';
-      const contents = [
-        {text: 'Generate a complete, detailed transcript of this audio.'},
-        {inlineData: {mimeType: mimeType, data: base64Audio}},
-      ];
-
-      const generateContentFn = () => this.genAI!.models.generateContent({ model: MODEL_NAME, contents: contents });
-
-      const onRetryCallback = (attempt: number, error: any) => {
-          console.warn(`Transcription attempt ${attempt} failed. Retrying...`, error);
-          this.recordingStatus.textContent = `Model is busy. Retrying transcription... (${attempt}/3)`;
-          this.recordingStatus.className = 'status-text warning';
-      };
-      
-      const response: GenerateContentResponse = await this.retryWithBackoff(generateContentFn, 3, 2000, onRetryCallback);
-      const transcriptionText = response.text; 
-
-      if (transcriptionText) {
-        noteForTranscription.rawTranscription = transcriptionText;
-        await this.saveNote(noteForTranscription);
-
-        if (this.currentNoteId === noteId) { 
-            this.displayNote(noteId);
-        } else {
-             if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList(); 
-             this.checkAndSetFocusMode();
-        }
-        this.updateApplyCustomPromptButtonState();
-
-        if (this.isAutoPolishEnabled) {
-          this.recordingStatus.textContent = 'Transcription complete. Polishing note...';
-          this.recordingStatus.className = 'status-text';
-          await this.getPolishedNote(noteId);
-        } else {
-          this.recordingStatus.textContent = 'Transcription complete. Auto-polish is off.';
-          this.recordingStatus.className = 'status-text success';
-          this.checkAndSetFocusMode();
-        }
-      } else {
-        this.recordingStatus.textContent = 'Transcription failed or returned empty.';
-        this.recordingStatus.className = 'status-text warning';
-        noteForTranscription.rawTranscription = 'Could not transcribe audio. Please try again.';
-        noteForTranscription.polishedNote = '<p><em>Could not transcribe audio. Please try again.</em></p>';
-        await this.saveNote(noteForTranscription);
-        if (this.currentNoteId === noteId) this.displayNote(noteId);
-        else {
-            if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
-            this.checkAndSetFocusMode();
-        }
-        this.updateApplyCustomPromptButtonState();
-      }
-    } catch (error) {
-      console.error('Error getting transcription:', error);
-      const displayErrorMessage = this.formatApiErrorMessage(error);
-      this.recordingStatus.textContent = `Error getting transcription: ${displayErrorMessage.substring(0,100)}`;
-      this.recordingStatus.className = 'status-text error';
-      noteForTranscription.rawTranscription = `Error during transcription: ${displayErrorMessage}`;
-      noteForTranscription.polishedNote = `<p><em>Error during transcription: ${displayErrorMessage}</em></p>`;
-      await this.saveNote(noteForTranscription);
-      if (this.currentNoteId === noteId) this.displayNote(noteId);
-      else {
-          if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
-          this.checkAndSetFocusMode();
-      }
-      this.updateApplyCustomPromptButtonState();
-    }
-  }
-
-  private async getPolishedNote(noteId: string, overrideTargetLanguage?: string, overrideCustomPrompt?: string): Promise<void> {
-    if (!this.userApiKey || !this.genAI) {
-        this.recordingStatus.textContent = 'API Key not set for polishing.';
-        this.recordingStatus.className = 'status-text error';
-        this.checkAndSetFocusMode();
-        return;
-    }
-    const noteToPolish = this.allNotes.find(n => n.id === noteId);
-    if (!noteToPolish) {
-        this.recordingStatus.textContent = 'Error: Note not found for polishing.';
-        this.recordingStatus.className = 'status-text error';
-        this.checkAndSetFocusMode();
-        return;
-    }
-
-    try {
-      if (!noteToPolish.rawTranscription || noteToPolish.rawTranscription.trim() === '' || noteToPolish.rawTranscription.startsWith('Error during transcription:') || noteToPolish.rawTranscription === 'Could not transcribe audio. Please try again.') {
-        this.recordingStatus.textContent = 'No valid transcription to polish.';
-        this.recordingStatus.className = 'status-text warning';
-        noteToPolish.polishedNote = '<p><em>No valid transcription available to polish.</em></p>';
-        await this.saveNote(noteToPolish);
-        if (this.currentNoteId === noteId) this.displayNote(noteId);
-        else {
-            if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
-            this.checkAndSetFocusMode();
-        }
-        this.updateApplyCustomPromptButtonState();
-        return;
-      }
-
-      this.recordingStatus.textContent = 'Polishing note...';
-      this.recordingStatus.className = 'status-text';
-
-      const targetLanguageCode = overrideTargetLanguage || noteToPolish.targetLanguage || this.outputLanguageSelect.value;
-      const customPrompt = overrideCustomPrompt !== undefined 
-        ? overrideCustomPrompt 
-        : ( (this.currentNoteId === noteId && !this.customPromptContainer.classList.contains('hidden') )
-            ? this.customPromptTextarea.value.trim() 
-            : noteToPolish.customPolishingPrompt);
-      
-      const targetLanguage = DEFAULT_LANGUAGES.find(l => l.code === targetLanguageCode) || DEFAULT_LANGUAGES[0];
-
-      let promptText: string;
-      if (customPrompt) {
-        promptText = `You are an expert note-taking assistant.
-First, mentally translate the following raw audio transcription into ${targetLanguage.name} (${targetLanguage.code}).
-Then, take the ${targetLanguage.name} translation and apply the user-provided instructions below.
-Your final output MUST ONLY be the polished note in ${targetLanguage.name}, formatted in markdown.
-Do NOT include any introductory phrases, explanations, or any text other than the requested note itself.
-
-User Instructions:
-${customPrompt}
-
-Raw transcription:
-${noteToPolish.rawTranscription}`;
-      } else {
-        promptText = `You are an expert note-taking assistant.
-First, mentally translate the following raw audio transcription into ${targetLanguage.name} (${targetLanguage.code}).
-Then, take the ${targetLanguage.name} translation and perform the following:
-- Create a polished, well-formatted note.
-- Remove filler words (e.g., um, uh, like), unnecessary repetitions, and false starts.
-- Correct grammar and improve sentence structure.
-- Format the content logically using markdown (e.g., headings for topics, bullet/numbered lists for items).
-- Ensure all original meaning and key information from the transcription are preserved.
-Your final output MUST ONLY be the polished note in ${targetLanguage.name}, formatted in markdown.
-Do NOT include any introductory phrases, explanations, or any text other than the requested note itself.
-
-Raw transcription:
-${noteToPolish.rawTranscription}`;
-      }
-      
-      const contents = [{text: promptText}];
-      
-      const generateContentFn = () => this.genAI!.models.generateContent({ model: MODEL_NAME, contents: contents });
-      const onRetryCallback = (attempt: number, error: any) => {
-          console.warn(`Polishing attempt ${attempt} failed. Retrying...`, error);
-          this.recordingStatus.textContent = `Model is busy. Retrying polishing... (${attempt}/3)`;
-          this.recordingStatus.className = 'status-text warning';
-      };
-      const response: GenerateContentResponse = await this.retryWithBackoff(generateContentFn, 3, 2000, onRetryCallback);
-      const polishedText = response.text; 
-
-      if (polishedText) {
-        const htmlContent = marked.parse(polishedText) as string;
-        noteToPolish.polishedNote = htmlContent;
-        noteToPolish.targetLanguage = targetLanguageCode; 
-        noteToPolish.customPolishingPrompt = customPrompt || undefined;
-
-        if (this.currentNoteId === noteId && !overrideTargetLanguage && !overrideCustomPrompt) {
-            let noteTitleSet = false;
-            const lines = polishedText.split('\n').map((l) => l.trim());
-            for (const line of lines) {
-              if (line.startsWith('#')) {
-                const title = line.replace(/^#+\s+/, '').trim();
-                if (title) { noteToPolish.title = title; noteTitleSet = true; break;}
-              }
-            }
-            if (!noteTitleSet) {
-              for (const line of lines) {
-                if (line.length > 0) {
-                  let potentialTitle = line.replace(/^[\*_\`#\->\s\[\]\(.\d)]+/, '').replace(/[\*_\`#]+$/, '').trim();
-                  if (potentialTitle.length > 3) {
-                    const maxLength = 60;
-                    noteToPolish.title = potentialTitle.substring(0, maxLength) + (potentialTitle.length > maxLength ? '...' : '');
-                    noteTitleSet = true; break;
-                  }
-                }
-              }
-            }
-            if (!noteTitleSet && (noteToPolish.title.startsWith('Note ') || noteToPolish.title === this.editorTitleDiv.getAttribute('placeholder'))) { 
-                noteToPolish.title = `Note from ${this.formatTimestamp(noteToPolish.timestamp)}`;
-            }
-        }
-        
-        await this.saveNote(noteToPolish);
-        if (this.currentNoteId === noteId) this.displayNote(noteId); 
-        else {
-            if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
-            this.checkAndSetFocusMode();
-        }
-        this.recordingStatus.textContent = 'Note polished. Ready for next recording.';
-        this.recordingStatus.className = 'status-text success';
-      } else {
-        this.recordingStatus.textContent = 'Polishing failed or returned empty.';
-        this.recordingStatus.className = 'status-text warning';
-        noteToPolish.polishedNote = '<p><em>Polishing returned empty. Raw transcription is available.</em></p>';
-        await this.saveNote(noteToPolish);
-        if (this.currentNoteId === noteId) this.displayNote(noteId);
-        else {
-            if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
-            this.checkAndSetFocusMode();
-        }
-      }
-    } catch (error) {
-      console.error('Error polishing note:', error);
-      const displayErrorMessage = this.formatApiErrorMessage(error);
-      this.recordingStatus.textContent = `Error polishing note: ${displayErrorMessage.substring(0,100)}`;
-      this.recordingStatus.className = 'status-text error';
-      noteToPolish.polishedNote = `<p><em>Error during polishing: ${displayErrorMessage}</em></p>`;
-      await this.saveNote(noteToPolish);
-      if (this.currentNoteId === noteId) this.displayNote(noteId);
-      else {
-        if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) this.renderArchiveList();
-        this.checkAndSetFocusMode();
-      }
-    }
-    this.updateApplyCustomPromptButtonState();
-  }
-
-  private async createNewNote(): Promise<void> {
-    if (this.isRecording && this.mediaRecorder) {
-        this.recordingStatus.textContent = 'Finalizing current recording...';
-        this.recordingStatus.className = 'status-text';
-        await this.stopRecording(); 
-    }
-
-    const newNote: Note = {
-      id: `note_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      title: `Note ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 
-      rawTranscription: '',
-      polishedNote: '',
-      timestamp: Date.now(),
-      targetLanguage: this.outputLanguageSelect.value || 'en',
-      customPolishingPrompt: this.customPromptTextarea.value.trim() || undefined,
-    };
-    
-    this.allNotes.push(newNote);
-    this.currentNoteId = newNote.id; 
-    await this.saveNote(newNote);
-    this.displayNote(newNote.id);
-    
-    this.updateUiForApiKey(); 
-    this.checkAndSetFocusMode(); 
-  }
-
+  
   private checkAndSetFocusMode(): void {
-    if (!this.userApiKey) {
+    const isApiKeySet = !!this.userApiKey;
+    const currentNote = this.getCurrentNote();
+    const isNoteEmpty = !currentNote || 
+                        (!currentNote.audioBlob && 
+                         !currentNote.rawTranscription && 
+                         !currentNote.polishedNote);
+
+    if (!isApiKeySet) {
         this.appContainer.classList.add('app-initial-api-focus');
-        this.appContainer.classList.remove('app-focus-mode'); 
-        this.focusPromptOverlay.classList.remove('hidden');
-        this.focusPromptOverlay.querySelector('.focus-prompt-text')!.innerHTML = 'Let\'s AudioWrite what\'s on your mind!';
+        this.focusPromptOverlay.classList.add('hidden'); // No focus prompt if API key needed
     } else {
         this.appContainer.classList.remove('app-initial-api-focus');
-        this.appContainer.classList.remove('app-focus-mode'); 
-        this.focusPromptOverlay.classList.add('hidden'); 
+        if (isNoteEmpty) {
+            this.focusPromptOverlay.classList.remove('hidden');
+        } else {
+            this.focusPromptOverlay.classList.add('hidden');
+        }
     }
     this.updateRecordButtonGlowState();
   }
 
+  private updateUiForRecordingState(isRecording: boolean): void {
+    this.isLiveRecordingActive = isRecording;
+    this.appContainer.classList.toggle('app-is-live-recording', isRecording);
+    this.recordButton.classList.toggle('recording', isRecording);
+    this.recordingInterface.classList.toggle('is-live', isRecording);
+    this.focusPromptOverlay.classList.add('hidden');
+
+    const micIcon = this.recordButton.querySelector('.fa-microphone');
+    const stopIconHTML = '<i class="fas fa-stop"></i>';
+    if(micIcon) {
+        micIcon.outerHTML = stopIconHTML;
+    }
+
+    if (isRecording) {
+      if (this.liveRecordingTitle && this.liveWaveformCanvas && this.liveRecordingTimerDisplay) {
+        this.liveRecordingTitle.style.display = 'block';
+        this.liveWaveformCanvas.style.display = 'block';
+        this.liveRecordingTimerDisplay.style.display = 'block';
+      }
+    } else {
+      if (this.liveRecordingTitle && this.liveWaveformCanvas && this.liveRecordingTimerDisplay) {
+        this.liveRecordingTitle.style.display = 'none';
+        this.liveWaveformCanvas.style.display = 'none';
+        this.liveRecordingTimerDisplay.style.display = 'none';
+      }
+      const stopIcon = this.recordButton.querySelector('.fa-stop');
+      const micIconHTML = '<i class="fas fa-microphone"></i>';
+      if(stopIcon) {
+          stopIcon.outerHTML = micIconHTML;
+      }
+      this.updateUiForApiKey(); // Re-evaluate status text etc.
+    }
+  }
+
+  private updateLiveRecordingTimer(): void {
+    const elapsed = Date.now() - this.recordingStartTime;
+    const minutes = Math.floor(elapsed / 60000);
+    const seconds = Math.floor((elapsed % 60000) / 1000);
+    const milliseconds = Math.floor((elapsed % 1000) / 10);
+    if (this.liveRecordingTimerDisplay) {
+      this.liveRecordingTimerDisplay.textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+    }
+  }
+
+  private setupWaveformCanvas(): void {
+    if (!this.liveWaveformCanvas || !this.liveWaveformCtx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.liveWaveformCanvas.getBoundingClientRect();
+    this.liveWaveformCanvas.width = rect.width * dpr;
+    this.liveWaveformCanvas.height = rect.height * dpr;
+    this.liveWaveformCtx.scale(dpr, dpr);
+  }
+
+  private drawLiveWaveform(): void {
+    if (!this.analyserNode || !this.waveformDataArray || !this.liveWaveformCtx || !this.liveWaveformCanvas) {
+      if (this.waveformDrawingId) cancelAnimationFrame(this.waveformDrawingId);
+      return;
+    }
+
+    this.waveformDrawingId = requestAnimationFrame(() => this.drawLiveWaveform());
+    this.analyserNode.getByteTimeDomainData(this.waveformDataArray);
+
+    const ctx = this.liveWaveformCtx;
+    const canvas = this.liveWaveformCanvas;
+    const bufferLength = this.analyserNode.frequencyBinCount;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim();
+    ctx.beginPath();
+    
+    const sliceWidth = canvas.width / bufferLength;
+    let x = 0;
+
+    for (let i = 0; i < bufferLength; i++) {
+      const v = this.waveformDataArray[i] / 128.0;
+      const y = v * canvas.height / 2;
+
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+      x += sliceWidth;
+    }
+
+    ctx.lineTo(canvas.width, canvas.height / 2);
+    ctx.stroke();
+  }
+  
+  private async createNewNote(): Promise<void> {
+    const newNote: Note = {
+      id: self.crypto.randomUUID(),
+      title: 'Untitled Note',
+      rawTranscription: '',
+      polishedNote: '',
+      timestamp: Date.now(),
+      targetLanguage: this.outputLanguageSelect.value,
+    };
+    this.allNotes.push(newNote);
+    await saveNoteToDB(newNote);
+    this.loadNoteIntoEditor(newNote.id);
+    this.checkAndSetFocusMode();
+  }
+  
+  private async loadNotes(): Promise<void> {
+    this.allNotes = await getAllNotesFromDB();
+  }
+
+  private async saveCurrentNote(): Promise<void> {
+    const note = this.getCurrentNote();
+    if (note) {
+      await saveNoteToDB(note);
+    }
+  }
+
+  private getCurrentNote(): Note | undefined {
+    return this.allNotes.find(n => n.id === this.currentNoteId);
+  }
+
+  private loadNoteIntoEditor(noteId: string): void {
+    const note = this.allNotes.find(n => n.id === noteId);
+    if (!note) return;
+
+    this.currentNoteId = noteId;
+    
+    this.editorTitleDiv.textContent = note.title;
+    this.rawTranscriptionDiv.innerHTML = note.rawTranscription;
+    this.polishedNoteDiv.innerHTML = note.polishedNote;
+    this.currentNoteTimestampDisplay.textContent = `Created: ${new Date(note.timestamp).toLocaleString()}`;
+    this.outputLanguageSelect.value = note.targetLanguage || 'en';
+    this.customPromptTextarea.value = note.customPolishingPrompt || '';
+
+    this.updateContentPlaceholders();
+    this.updateApplyCustomPromptButtonState();
+    this.checkAndSetFocusMode();
+  }
+
+  private handleOutputLanguageChange(): void {
+    const note = this.getCurrentNote();
+    if (note) {
+      note.targetLanguage = this.outputLanguageSelect.value;
+      this.saveCurrentNote();
+    }
+  }
+  
+  private toggleCustomPromptDisplay(): void {
+    this.customPromptContainer.classList.toggle('hidden');
+    const icon = this.toggleCustomPromptButton.querySelector('i');
+    if (icon) {
+        icon.classList.toggle('fa-wand-magic-sparkles');
+        icon.classList.toggle('fa-chevron-up');
+    }
+  }
+  
+  private handleCustomPromptChange(): void {
+    const note = this.getCurrentNote();
+    if (note) {
+      note.customPolishingPrompt = this.customPromptTextarea.value.trim();
+      this.saveCurrentNote();
+      this.updateApplyCustomPromptButtonState();
+    }
+  }
+  
+  private async handleApplyCustomPrompt(): Promise<void> {
+    const note = this.getCurrentNote();
+    if (!note || !this.genAI) return;
+    
+    // Ensure latest prompt is saved before polishing
+    this.handleCustomPromptChange();
+
+    if (!note.rawTranscription) {
+      if (note.audioBlob) {
+        // If there's audio but no transcription, transcribe first
+        await this.transcribeNote(note.id);
+        // After transcription, the polished note might be generated automatically.
+        // Re-check state.
+        const updatedNote = this.getCurrentNote();
+        if (updatedNote && updatedNote.polishedNote) {
+            // Already auto-polished, no need to do it again unless forced
+            console.log("Auto-polished after transcription. Manual polish skipped.");
+            return;
+        }
+      } else {
+        this.updateStatus('error', 'No audio or transcription available to polish.');
+        return;
+      }
+    }
+    
+    await this.polishNote(note.id);
+  }
+
+  private updateApplyCustomPromptButtonState(): void {
+    const note = this.getCurrentNote();
+    const isApiKeySet = !!this.userApiKey;
+    if (!note || !isApiKeySet) {
+      this.applyCustomPromptButton.disabled = true;
+      return;
+    }
+    const hasContentToPolish = !!note.rawTranscription || !!note.audioBlob;
+    this.applyCustomPromptButton.disabled = !hasContentToPolish;
+  }
+  
+  private handleAutoPolishToggle(): void {
+    this.isAutoPolishEnabled = this.autoPolishToggle.checked;
+    localStorage.setItem(LOCAL_STORAGE_AUTO_POLISH, String(this.isAutoPolishEnabled));
+  }
+  
+  private handleTitleChange(): void {
+    const note = this.getCurrentNote();
+    if (note && note.title !== this.editorTitleDiv.textContent) {
+      note.title = this.editorTitleDiv.textContent || 'Untitled Note';
+      this.saveCurrentNote();
+    }
+  }
+  
+  private handleContentEditableChange(field: 'rawTranscription' | 'polishedNote'): void {
+    const note = this.getCurrentNote();
+    if (note) {
+      const div = field === 'rawTranscription' ? this.rawTranscriptionDiv : this.polishedNoteDiv;
+      if (note[field] !== div.innerHTML) {
+        note[field] = div.innerHTML;
+        this.saveCurrentNote();
+        this.updateContentPlaceholders();
+      }
+    }
+  }
+  
+  private updateContentPlaceholders(): void {
+    ['rawTranscriptionDiv', 'polishedNoteDiv'].forEach(divName => {
+        const div = this[divName as keyof this] as HTMLDivElement;
+        const placeholder = div.getAttribute('placeholder');
+        
+        // Use innerText to check for visible content, ignoring HTML tags like <br>
+        const hasContent = div.innerText.trim().length > 0;
+        
+        if (!hasContent && placeholder) {
+            if (!div.innerHTML.includes('placeholder-active')) {
+                div.classList.add('placeholder-active');
+                div.innerHTML = placeholder;
+            }
+        } else if (hasContent && div.classList.contains('placeholder-active')) {
+            div.classList.remove('placeholder-active');
+            if(div.innerHTML === placeholder) {
+              div.innerHTML = ''; // Clear if it was just the placeholder
+            }
+        }
+    });
+  }
+
+  private async requestWakeLock(): Promise<void> {
+    if ('wakeLock' in navigator) {
+      try {
+        this.wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+        this.wakeLockSentinel.addEventListener('release', () => {
+          console.log('Screen Wake Lock was released');
+        });
+        console.log('Screen Wake Lock is active');
+      } catch (err: any) {
+        console.error(`${err.name}, ${err.message}`);
+      }
+    } else {
+      console.log('Wake Lock API is not supported by this browser.');
+    }
+  }
+
+  private async releaseWakeLock(): Promise<void> {
+    if (this.wakeLockSentinel) {
+      await this.wakeLockSentinel.release();
+      this.wakeLockSentinel = null;
+    }
+  }
+  
+  private async toggleRecording(): Promise<void> {
+    if (!this.genAI) {
+      this.updateStatus('error', 'API Key not set. Please add one in Settings.');
+      return;
+    }
+
+    if (this.isRecording) {
+      await this.stopRecording();
+    } else {
+      await this.startRecording();
+    }
+  }
+
+  private async startRecording(): Promise<void> {
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.isRecording = true;
+      this.recordButton.disabled = true; // Disable until fully started
+
+      this.updateUiForRecordingState(true);
+      this.requestWakeLock();
+      this.audioChunks = [];
+      const options = { mimeType: 'audio/webm' };
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
+      this.mediaRecorder.ondataavailable = (event) => this.audioChunks.push(event.data);
+      this.mediaRecorder.onstop = () => this.processAudio();
+      
+      // Setup audio context for visualization
+      this.audioContext = new AudioContext();
+      const source = this.audioContext.createMediaStreamSource(this.stream);
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 2048;
+      this.waveformDataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+      source.connect(this.analyserNode);
+      
+      this.handleResize();
+      this.drawLiveWaveform();
+      
+      this.recordingStartTime = Date.now();
+      this.timerIntervalId = window.setInterval(() => this.updateLiveRecordingTimer(), 50);
+
+      this.mediaRecorder.start();
+      this.recordButton.disabled = false; // Re-enable now
+      this.updateStatus('info', 'Recording...');
+
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      this.updateStatus('error', 'Microphone access denied.');
+      this.isRecording = false;
+      this.updateUiForRecordingState(false);
+      this.releaseWakeLock();
+      this.recordButton.disabled = false;
+    }
+  }
+
+  private async stopRecording(): Promise<void> {
+    if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') return;
+    
+    this.updateStatus('info', 'Processing audio...');
+    this.recordButton.disabled = true; // Disable until processing is done
+    
+    this.mediaRecorder.stop();
+    this.stream?.getTracks().forEach(track => track.stop());
+    this.isRecording = false;
+    
+    if (this.waveformDrawingId) cancelAnimationFrame(this.waveformDrawingId);
+    if (this.timerIntervalId) clearInterval(this.timerIntervalId);
+    this.audioContext?.close();
+    
+    this.updateUiForRecordingState(false);
+    this.releaseWakeLock();
+    // processAudio() will be called by onstop event
+  }
+
+  private async processAudio(): Promise<void> {
+    if (this.audioChunks.length === 0) {
+      this.updateStatus('warning', 'No audio data captured, please try again.');
+      this.recordButton.disabled = false;
+      return;
+    }
+
+    const note = this.getCurrentNote();
+    if (!note) {
+        console.error("No current note to process audio for.");
+        this.recordButton.disabled = false;
+        return;
+    }
+
+    const mimeType = this.audioChunks[0].type;
+    const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+    this.audioChunks = [];
+    
+    note.audioBlob = audioBlob;
+    note.audioMimeType = mimeType;
+    await this.saveCurrentNote();
+
+    // Now, trigger transcription.
+    await this.transcribeNote(note.id);
+    
+    this.recordButton.disabled = false;
+    this.updateApplyCustomPromptButtonState();
+  }
+  
+  private async transcribeNote(noteId: string): Promise<void> {
+    const note = this.allNotes.find(n => n.id === noteId);
+    if (!note || !note.audioBlob || !this.genAI) {
+        this.updateStatus('error', 'Note or audio data is missing for transcription.');
+        return;
+    }
+    
+    try {
+        this.updateStatus('info', 'Transcribing audio...');
+        const audioData = await this.blobToBase64(note.audioBlob);
+        const textPart = { text: "Transcribe the following audio:" };
+        const audioPart = { inlineData: { mimeType: note.audioMimeType!, data: audioData } };
+        
+        const response: GenerateContentResponse = await this.genAI.models.generateContent({
+            model: MODEL_NAME,
+            contents: { parts: [textPart, audioPart] },
+        });
+
+        const transcription = response.text.trim();
+        note.rawTranscription = transcription;
+        this.rawTranscriptionDiv.innerHTML = transcription;
+        await this.saveCurrentNote();
+        this.updateStatus('success', 'Transcription complete!');
+        this.updateContentPlaceholders();
+
+        // Auto-polish if enabled
+        if (this.isAutoPolishEnabled) {
+            await this.polishNote(note.id);
+        } else {
+             // If not auto-polishing, ensure we reset status
+            this.updateStatus('success', 'Transcription ready for polishing.');
+        }
+
+    } catch (error) {
+        console.error('Error during transcription:', error);
+        this.updateStatus('error', 'Transcription failed. Please try again.');
+        note.rawTranscription = `*Transcription failed. You can try again using the "Transcribe" button in the archive.*`;
+        if (this.currentNoteId === noteId) {
+            this.rawTranscriptionDiv.innerHTML = note.rawTranscription;
+        }
+        await this.saveCurrentNote();
+    } finally {
+        this.updateApplyCustomPromptButtonState();
+        if (this.archiveModal && !this.archiveModal.classList.contains('hidden')) {
+            this.renderArchiveList(); // Refresh archive view
+        }
+    }
+  }
+
+
+  private async polishNote(noteId: string): Promise<void> {
+    const note = this.allNotes.find(n => n.id === noteId);
+    if (!note || !this.genAI) return;
+    if (!note.rawTranscription) {
+      this.updateStatus('error', 'No transcription to polish.');
+      return;
+    }
+    
+    this.updateStatus('info', 'Polishing note with Gemini...');
+
+    try {
+      const languageName = DEFAULT_LANGUAGES.find(l => l.code === note.targetLanguage)?.name || 'the specified language';
+      const userPrompt = note.customPolishingPrompt || 
+        `You are a note-taking assistant. The user has provided a raw, messy audio transcription.
+        Your task is to process this transcription and transform it into a well-structured, clear, and polished note.
+        
+        Follow these instructions:
+        - Correct any spelling mistakes and grammatical errors.
+        - Improve sentence structure and clarity for better readability.
+        - Remove filler words, false starts, and unnecessary repetitions (e.g., "um", "ah", "like", "you know").
+        - Organize the content logically. Use headings, bullet points, numbered lists, or bold text where appropriate to create a clear hierarchy.
+        - The final output should be in ${languageName}.
+        - Format the output using Markdown.
+        - Do not add any commentary or preamble. Respond only with the polished note content.`;
+        
+      const response: GenerateContentResponse = await this.genAI.models.generateContent({
+        model: MODEL_NAME,
+        contents: `USER_PROMPT: ${userPrompt}\n\nRAW_TRANSCRIPTION: ${note.rawTranscription}`,
+      });
+      
+      const polishedContent = response.text;
+      note.polishedNote = await marked(polishedContent);
+      
+      if (this.currentNoteId === note.id) {
+          this.polishedNoteDiv.innerHTML = note.polishedNote;
+          this.updateContentPlaceholders();
+      }
+      await this.saveCurrentNote();
+      this.updateStatus('success', 'Note polishing complete!');
+
+    } catch (error) {
+      console.error('Error polishing note:', error);
+      this.updateStatus('error', 'Failed to polish note.');
+    }
+  }
+  
+  private updateStatus(type: 'info' | 'success' | 'warning' | 'error', message: string, duration = 3000): void {
+    if (!this.recordingStatus) return;
+    this.recordingStatus.textContent = message;
+    this.recordingStatus.className = `status-text ${type}`;
+    if (type !== 'info') {
+      setTimeout(() => {
+          if (this.recordingStatus.textContent === message) { // Only clear if message hasn't changed
+              this.updateUiForApiKey(); // This will reset to default or API key warning
+          }
+      }, duration);
+    }
+  }
+  
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = (reader.result as string).split(',')[1];
+        resolve(base64data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
 
   private openArchiveModal(): void {
     this.renderArchiveList();
@@ -1348,14 +993,148 @@ ${noteToPolish.rawTranscription}`;
   private closeArchiveModal(): void {
     this.archiveModal.classList.add('hidden');
   }
+  
+  private renderArchiveList(): void {
+    this.archiveListContainer.innerHTML = '';
+    const sortedNotes = this.allNotes.sort((a, b) => b.timestamp - a.timestamp);
+
+    if (sortedNotes.length === 0) {
+        this.archiveListContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-tertiary);">No saved notes yet.</p>';
+        return;
+    }
+
+    sortedNotes.forEach(note => {
+        const item = document.createElement('div');
+        item.className = 'archive-item';
+        if (note.id === this.currentNoteId) {
+            item.classList.add('disabled');
+        }
+
+        const previewText = this.getNotePreview(note);
+
+        const isApiKeySet = !!this.userApiKey;
+        const canPolish = isApiKeySet && note.rawTranscription && !note.rawTranscription.startsWith('*Transcription failed');
+        const canTranscribe = isApiKeySet && note.audioBlob && (!note.rawTranscription || note.rawTranscription.startsWith('*Transcription failed'));
+        
+        item.innerHTML = `
+            <div class="archive-item-header">
+                <span class="archive-item-title">${note.title}</span>
+                <span class="archive-item-timestamp">${new Date(note.timestamp).toLocaleDateString()}</span>
+            </div>
+            <div class="archive-item-content">
+                <p>${previewText}</p>
+            </div>
+            <div class="archive-item-actions">
+                <button class="action-button-small load-note" data-id="${note.id}" ${note.id === this.currentNoteId ? 'disabled' : ''}>
+                    <i class="fas fa-folder-open"></i> Load
+                </button>
+                ${canTranscribe ? `
+                    <button class="action-button-small transcribe-note" data-id="${note.id}">
+                        <i class="fas fa-microphone-alt"></i> Transcribe
+                    </button>
+                ` : `
+                    <button class="action-button-small repolish-note" data-id="${note.id}" ${!canPolish ? 'disabled title="Transcription needed or API key missing"' : ''}>
+                        <i class="fas fa-wand-magic-sparkles"></i> Re-polish
+                    </button>
+                `}
+                <button class="action-button-small danger delete-note" data-id="${note.id}">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <audio controls class="action-button-small audio-player" ${note.audioBlob ? '' : 'style="display:none;"'}></audio>
+            </div>
+        `;
+
+        this.archiveListContainer.appendChild(item);
+        
+        const audioPlayer = item.querySelector('.audio-player') as HTMLAudioElement;
+        if (note.audioBlob && audioPlayer) {
+          const audioURL = URL.createObjectURL(note.audioBlob);
+          audioPlayer.src = audioURL;
+          // Revoke URL when it's no longer needed, e.g. when modal closes
+        }
+    });
+
+    this.bindArchiveItemEventListeners();
+  }
+  
+  private getNotePreview(note: Note): string {
+    if (note.polishedNote) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = note.polishedNote;
+        return `<strong>Polished:</strong> ${tempDiv.textContent?.substring(0, 150) || '(empty)'}...`;
+    }
+    if (note.rawTranscription) {
+        return `<strong>Raw:</strong> ${note.rawTranscription.substring(0, 150)}...`;
+    }
+    if (note.audioBlob) {
+        return `<strong><i class="fas fa-microphone-alt"></i> Audio recorded</strong>, ready for transcription.`;
+    }
+    return '<em>Empty note...</em>';
+  }
+
+  private bindArchiveItemEventListeners(): void {
+    this.archiveListContainer.querySelectorAll('.load-note').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const noteId = (e.currentTarget as HTMLButtonElement).dataset.id;
+            if (noteId) {
+                this.loadNoteIntoEditor(noteId);
+                this.closeArchiveModal();
+            }
+        });
+    });
+
+    this.archiveListContainer.querySelectorAll('.delete-note').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const noteId = (e.currentTarget as HTMLButtonElement).dataset.id;
+            if (noteId && confirm('Are you sure you want to delete this note? This cannot be undone.')) {
+                if(this.currentNoteId === noteId) {
+                    alert("You cannot delete the currently active note.");
+                    return;
+                }
+                await this.deleteNote(noteId);
+                this.renderArchiveList(); // Re-render the list
+            }
+        });
+    });
+
+    this.archiveListContainer.querySelectorAll('.repolish-note').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const noteId = (e.currentTarget as HTMLButtonElement).dataset.id;
+            if (noteId) {
+                this.updateStatus('info', 'Re-polishing note...');
+                this.closeArchiveModal();
+                await this.polishNote(noteId);
+                // If the repolished note is the current one, update editor
+                if(this.currentNoteId === noteId) {
+                    this.loadNoteIntoEditor(noteId);
+                }
+            }
+        });
+    });
+
+    this.archiveListContainer.querySelectorAll('.transcribe-note').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const noteId = (e.currentTarget as HTMLButtonElement).dataset.id;
+            if (noteId) {
+                this.updateStatus('info', 'Retrying transcription...');
+                this.closeArchiveModal();
+                await this.transcribeNote(noteId);
+                // If the transcribed note is the current one, update editor
+                if(this.currentNoteId === noteId) {
+                    this.loadNoteIntoEditor(noteId);
+                }
+            }
+        });
+    });
+  }
+
+  private async deleteNote(noteId: string): Promise<void> {
+    this.allNotes = this.allNotes.filter(n => n.id !== noteId);
+    await deleteNoteFromDB(noteId);
+  }
 
   private openSettingsModal(): void {
     this.updateApiKeyStatusUI();
-    if (this.deferredInstallPrompt && this.installAppSection) {
-        this.installAppSection.classList.remove('hidden');
-    } else if (this.installAppSection) {
-        this.installAppSection.classList.add('hidden');
-    }
     this.settingsModal.classList.remove('hidden');
   }
 
@@ -1363,265 +1142,100 @@ ${noteToPolish.rawTranscription}`;
     this.settingsModal.classList.add('hidden');
     this.checkAndSetFocusMode();
   }
-
-
-  private renderArchiveList(): void {
-    if (!this.archiveListContainer) {
-        console.error("Critical: Archive list container DOM element not found.");
-        return;
+  
+  private initTheme(): void {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark' || (storedTheme === null && prefersDark)) {
+      document.body.classList.remove('light-mode');
+      this.themeToggleIcon.classList.remove('fa-moon');
+      this.themeToggleIcon.classList.add('fa-sun');
+    } else {
+      document.body.classList.add('light-mode');
+      this.themeToggleIcon.classList.remove('fa-sun');
+      this.themeToggleIcon.classList.add('fa-moon');
     }
-    this.archiveListContainer.innerHTML = ''; 
+  }
 
-    const sortedNotes = this.allNotes.sort((a, b) => b.timestamp - a.timestamp);
-
-    if (sortedNotes.length === 0) {
-        this.archiveListContainer.innerHTML = '<p class="archive-empty-message" style="text-align:center; color: var(--color-text-secondary);">No saved notes yet.</p>';
-        return;
-    }
+  private toggleTheme(): void {
+    document.body.classList.toggle('light-mode');
+    const isLightMode = document.body.classList.contains('light-mode');
+    localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
     
-    const isApiKeySet = !!(this.userApiKey && this.genAI);
-
-    sortedNotes.forEach(note => {
-      try {
-        const item = document.createElement('div');
-        item.className = 'archive-item';
-        item.setAttribute('data-note-id', note.id);
-
-        const noteTitle = note.title || 'Untitled Note';
-        const noteTimestamp = typeof note.timestamp === 'number' ? this.formatTimestamp(note.timestamp) : 'N/A';
-        const noteTargetLanguage = note.targetLanguage || 'en';
-        const langName = DEFAULT_LANGUAGES.find(l => l.code === noteTargetLanguage)?.name || noteTargetLanguage;
-        
-        let audioPlayerHtml = '';
-        if (note.audioBlob && note.audioMimeType) {
-          const audioSrc = URL.createObjectURL(note.audioBlob);
-          audioPlayerHtml = `<div class="archive-item-audio-player"><audio controls src="${audioSrc}"></audio></div>`;
-        } else {
-          audioPlayerHtml = `<p class="archive-item-no-audio"><em>No audio recorded for this note.</em></p>`;
-        }
-
-        const rawTranscriptionText = note.rawTranscription || '';
-        const rawSnippet = rawTranscriptionText.substring(0, 100) + (rawTranscriptionText.length > 100 ? '...' : '');
-        
-        const polishedNoteText = (note.polishedNote || '').replace(/<[^>]*>?/gm, ''); 
-        const polishedSnippet = polishedNoteText.substring(0,100) + (polishedNoteText.length > 100 ? '...' : '');
-
-        const hasAudio = !!note.audioBlob;
-        const hasValidTranscription = rawTranscriptionText && !rawTranscriptionText.startsWith('Error') && rawTranscriptionText.trim() !== '' && rawTranscriptionText !== 'Could not transcribe audio. Please try again.';
-        const canProcess = isApiKeySet && hasAudio;
-
-        let processActionsHtml = '';
-        if (canProcess) {
-            if (hasValidTranscription) {
-                processActionsHtml = `
-                    <select class="repolish-language"></select>
-                    <button class="action-button-small repolish-note" title="Re-polish this note with selected language and its stored custom prompt">Re-polish</button>
-                `;
-            } else {
-                processActionsHtml = `
-                    <button class="action-button-small transcribe-note" title="Transcribe the audio for this note">Transcribe</button>
-                `;
-            }
-        } else {
-            const reason = hasAudio ? 'API Key Needed' : 'No Audio';
-            processActionsHtml = `<button class="action-button-small" title="${reason}" disabled>${hasAudio ? 'Process' : 'No Audio'}</button>`;
-        }
-
-
-        item.innerHTML = `
-          <div class="archive-item-header">
-            <span class="archive-item-title">${noteTitle}</span>
-            <span class="archive-item-timestamp">${noteTimestamp}</span>
-          </div>
-          ${audioPlayerHtml}
-          <div class="archive-item-content">
-            <p><strong>Raw Transcription:</strong> ${rawSnippet || '<em>Empty</em>'}</p>
-            <p><strong>Polished Note (${langName}):</strong> ${polishedSnippet || '<em>Empty</em>'}</p>
-          </div>
-          <div class="archive-item-actions">
-            <button class="action-button-small load-note" title="Load to Editor">Load</button>
-            ${processActionsHtml}
-            <button class="action-button-small danger delete-note" title="Delete Note">Delete</button>
-          </div>
-        `;
-
-        item.querySelector('.load-note')?.addEventListener('click', () => this.loadNoteIntoEditor(note.id));
-        item.querySelector('.delete-note')?.addEventListener('click', () => this.deleteNote(note.id));
-
-        if (canProcess && hasValidTranscription) {
-            const langSelect = item.querySelector('.repolish-language') as HTMLSelectElement;
-            const repolishButton = item.querySelector('.repolish-note') as HTMLButtonElement;
-            if (langSelect && repolishButton) {
-                DEFAULT_LANGUAGES.forEach(lang => {
-                  const option = document.createElement('option');
-                  option.value = lang.code;
-                  option.textContent = lang.name;
-                  langSelect.appendChild(option);
-                });
-                langSelect.value = noteTargetLanguage;
-                
-                repolishButton.addEventListener('click', async () => {
-                  const newLang = langSelect.value;
-                  const customPromptForRepolish = note.customPolishingPrompt; 
-                  
-                  this.recordingStatus.textContent = `Re-polishing "${noteTitle}"...`;
-                  this.recordingStatus.className = 'status-text';
-                  repolishButton.textContent = 'Polishing...';
-                  repolishButton.disabled = true;
-                  langSelect.disabled = true;
-                  
-                  await this.getPolishedNote(note.id, newLang, customPromptForRepolish);
-                  
-                  this.renderArchiveList(); 
-                  if (this.currentNoteId === note.id) {
-                      this.displayNote(note.id);
-                  }
-                });
-            }
-        } else if (canProcess && !hasValidTranscription) {
-            const transcribeButton = item.querySelector('.transcribe-note') as HTMLButtonElement;
-            if (transcribeButton) {
-                transcribeButton.addEventListener('click', () => {
-                    this.transcribeNote(note.id);
-                });
-            }
-        }
-
-        this.archiveListContainer.appendChild(item);
-      } catch (error) {
-        console.error('Error rendering archive item for note ID:', (note ? note.id : 'unknown'), error);
-        const errorItem = document.createElement('div');
-        errorItem.className = 'archive-item archive-item-error'; 
-        errorItem.textContent = `Error displaying note: ${(note ? note.title || note.id : 'Unknown Note')}. See console for details.`;
-        this.archiveListContainer.appendChild(errorItem);
-      }
-    });
+    this.themeToggleIcon.classList.toggle('fa-sun', !isLightMode);
+    this.themeToggleIcon.classList.toggle('fa-moon', isLightMode);
   }
 
-  private async copyContent(type: 'polished' | 'raw'): Promise<void> {
-    const currentNote = this.getCurrentNote();
-    if (!currentNote) {
-        this.recordingStatus.textContent = 'No active note to copy from.';
-        this.recordingStatus.className = 'status-text warning';
+  private copyContent(type: 'raw' | 'polished'): void {
+    const contentDiv = type === 'raw' ? this.rawTranscriptionDiv : this.polishedNoteDiv;
+    const button = type === 'raw' ? this.copyRawTranscriptionButton : this.copyPolishedNoteButton;
+    
+    // Create a temporary textarea to preserve formatting
+    const textarea = document.createElement('textarea');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    
+    // Convert HTML to plain text, handling list items and paragraphs
+    let textToCopy = this.htmlToPlainText(contentDiv.innerHTML);
+
+    if (!textToCopy.trim()) {
+        this.updateCopyButtonState(button, 'warning', 'No content to copy!');
         return;
     }
 
-    let textToCopy: string | null = null;
-    let buttonToUpdate: HTMLButtonElement | null = null;
-    let originalButtonHTML = '';
+    textarea.value = textToCopy;
+    document.body.appendChild(textarea);
+    textarea.select();
 
-    const rawPlaceholder = this.rawTranscriptionDiv.getAttribute('placeholder') || '';
-    const polishedPlaceholder = this.polishedNoteDiv.getAttribute('placeholder') || '';
-
-    if (type === 'polished') {
-      textToCopy = this.polishedNoteDiv.innerText;
-      buttonToUpdate = this.copyPolishedNoteButton;
-      originalButtonHTML = '<i class="fas fa-copy"></i> Copy Polished';
-      if (textToCopy === polishedPlaceholder) textToCopy = '';
-    } else {
-      textToCopy = this.rawTranscriptionDiv.textContent;
-      buttonToUpdate = this.copyRawTranscriptionButton;
-      originalButtonHTML = '<i class="fas fa-copy"></i> Copy Raw';
-      if (textToCopy === rawPlaceholder) textToCopy = '';
-    }
-
-    if (textToCopy && textToCopy.trim() !== '') {
-      try {
-        await navigator.clipboard.writeText(textToCopy.trim());
-        if (buttonToUpdate) {
-          buttonToUpdate.innerHTML = '<i class="fas fa-check"></i> Copied!';
-          buttonToUpdate.disabled = true;
-          setTimeout(() => {
-            buttonToUpdate.innerHTML = originalButtonHTML;
-            buttonToUpdate.disabled = false;
-          }, 2000);
-        }
-        this.recordingStatus.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} content copied!`;
-        this.recordingStatus.className = 'status-text success';
-      } catch (err) {
+    try {
+        document.execCommand('copy');
+        this.updateCopyButtonState(button, 'success', 'Copied!');
+    } catch (err) {
         console.error('Failed to copy text: ', err);
-        if (buttonToUpdate) {
-          buttonToUpdate.innerHTML = '<i class="fas fa-times"></i> Failed';
-          setTimeout(() => {
-            buttonToUpdate.innerHTML = originalButtonHTML;
-          }, 2000);
-        }
-        this.recordingStatus.textContent = 'Failed to copy to clipboard.';
-        this.recordingStatus.className = 'status-text error';
-      }
-    } else {
-        this.recordingStatus.textContent = `Nothing to copy from ${type} content.`;
-        this.recordingStatus.className = 'status-text warning';
-         if (buttonToUpdate) {
-          buttonToUpdate.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Empty';
-          setTimeout(() => {
-            buttonToUpdate.innerHTML = originalButtonHTML;
-          }, 2000);
-        }
+        this.updateCopyButtonState(button, 'error', 'Failed!');
+    } finally {
+        document.body.removeChild(textarea);
     }
   }
+  
+  private htmlToPlainText(html: string): string {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Handle list items with prefixes
+      tempDiv.querySelectorAll('li').forEach(li => {
+          const parent = li.parentElement;
+          if (parent && parent.tagName === 'UL') {
+              li.prepend(document.createTextNode('- '));
+          } else if (parent && parent.tagName === 'OL') {
+              // Simple number for now, could be improved to get actual index
+              li.prepend(document.createTextNode('1. '));
+          }
+      });
+      
+      // Add newlines for block elements
+      tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, pre').forEach(el => {
+         el.append(document.createTextNode('\n')); 
+      });
 
-  private loadNoteIntoEditor(noteId: string): void {
-    this.currentNoteId = noteId;
-    this.displayNote(noteId); 
-    this.closeArchiveModal();
+      return tempDiv.innerText.trim();
   }
 
-  private async deleteNote(noteId: string): Promise<void> {
-    if (!confirm('Are you sure you want to delete this note? This cannot be undone.')) return;
+  private updateCopyButtonState(button: HTMLButtonElement, state: 'success' | 'error' | 'warning', message: string): void {
+      const originalContent = button.innerHTML;
+      const iconClass = state === 'success' ? 'fa-check' : (state === 'error' ? 'fa-times' : 'fa-exclamation-triangle');
+      
+      button.innerHTML = `<i class="fas ${iconClass}"></i> ${message}`;
+      button.disabled = true;
 
-    await deleteNoteFromDB(noteId);
-    this.allNotes = this.allNotes.filter(n => n.id !== noteId);
-    this.renderArchiveList(); 
-
-    if (this.currentNoteId === noteId) { 
-      if (this.allNotes.length > 0) {
-        this.loadNoteIntoEditor(this.allNotes.sort((a,b) => b.timestamp - a.timestamp)[0].id); 
-      } else {
-        await this.createNewNote(); 
-      }
-    }
-     this.checkAndSetFocusMode(); 
+      setTimeout(() => {
+          button.innerHTML = originalContent;
+          button.disabled = false;
+      }, 2000);
   }
+
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
   new VoiceNotesApp();
-
-  document.querySelectorAll<HTMLElement>('[contenteditable][placeholder]').forEach(el => {
-    const placeholder = el.getAttribute('placeholder')!;
-    
-    function updatePlaceholderState() {
-        const isPolishedNoteDiv = el.id === 'polishedNote';
-        const currentText = (isPolishedNoteDiv ? el.innerHTML : el.textContent)?.trim();
-
-        if (currentText === '' || (currentText === placeholder && !isPolishedNoteDiv) || (isPolishedNoteDiv && el.innerHTML === placeholder)) {
-            if (currentText === '') { 
-                if (isPolishedNoteDiv) el.innerHTML = placeholder;
-                else el.textContent = placeholder;
-            }
-            el.classList.add('placeholder-active');
-        } else {
-            el.classList.remove('placeholder-active');
-        }
-    }
-
-    updatePlaceholderState(); 
-
-    el.addEventListener('focus', function() {
-        const isPolishedNoteDiv = this.id === 'polishedNote';
-        const currentContent = isPolishedNoteDiv ? this.innerHTML : this.textContent;
-        if (currentContent?.trim() === placeholder) {
-            if (isPolishedNoteDiv) this.innerHTML = '';
-            else this.textContent = '';
-            this.classList.remove('placeholder-active');
-        }
-    });
-
-    el.addEventListener('blur', function() {
-        updatePlaceholderState();
-    });
-  });
 });
-
-export {};
