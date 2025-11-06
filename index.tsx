@@ -804,27 +804,33 @@ class VoiceNotesApp {
   }
 
   private async startRecording(): Promise<void> {
-    if (!this.userApiKey || !this.genAI) { 
-        this.recordingStatus.textContent = 'API Key is not set. Go to Settings to add one.';
-        this.recordingStatus.className = 'status-text error';
-        this.openSettingsModal();
-        return; 
+    if (!this.userApiKey || !this.genAI) {
+      this.recordingStatus.textContent = 'API Key is not set. Go to Settings to add one.';
+      this.recordingStatus.className = 'status-text error';
+      this.openSettingsModal();
+      return;
     }
     const currentNote = this.getCurrentNote();
     if (!currentNote) {
-        this.recordingStatus.textContent = 'Error: No current note selected. Please create a new note.';
-        this.recordingStatus.className = 'status-text error';
-        return;
+      this.recordingStatus.textContent = 'Error: No current note selected. Please create a new note.';
+      this.recordingStatus.className = 'status-text error';
+      return;
     }
+
+    // When starting a new recording, clear old data and update the timestamp/title
+    // to reflect that this note object is now for the new recording.
     currentNote.audioBlob = undefined;
     currentNote.audioMimeType = undefined;
-    currentNote.rawTranscription = ''; 
+    currentNote.rawTranscription = '';
     currentNote.polishedNote = '';
+    currentNote.timestamp = Date.now();
+    currentNote.title = `Note ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    
     this.displayNote(currentNote.id);
     await this.saveNote(currentNote);
 
-    this.appContainer.classList.remove('app-initial-api-focus'); 
-    this.appContainer.classList.remove('app-focus-mode'); 
+    this.appContainer.classList.remove('app-initial-api-focus');
+    this.appContainer.classList.remove('app-focus-mode');
     this.focusPromptOverlay.classList.add('hidden');
 
     try {
