@@ -30,15 +30,6 @@ AudioWrite is a client-side web application that leverages Google's Gemini AI to
 *   📱 **Responsive Design:** Works on desktop and mobile.
 *   PWA **Progressive Web App:** Installable for an app-like experience with offline asset caching.
 
-## 📸 Screenshots
-
-*(It's highly recommended to add 2-3 screenshots of your application here. For example:*
-*   *Main interface showing a polished note.*
-*   *Live recording interface with waveform.*
-*   *Archive modal and Settings modal.*)
-
-<!-- Example: <img src="docs/screenshot-main.png" alt="AudioWrite Main Interface" width="600"/> -->
-
 ## 🛠️ Core Technologies
 
 *   **Frontend:** HTML5, CSS3, TypeScript
