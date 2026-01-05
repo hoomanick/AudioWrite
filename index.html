@@ -42,7 +42,7 @@
   }
 }
 </script>
-    <script type="module" crossorigin src="/AudioWrite/assets/index-C3jXK4-c.js"></script>
+    <script type="module" crossorigin src="/AudioWrite/assets/index-Bf6_UiPs.js"></script>
     <link rel="stylesheet" crossorigin href="/AudioWrite/assets/index-DDjkoMqw.css">
   <link rel="manifest" href="/AudioWrite/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/AudioWrite/registerSW.js"></script></head>
   <body>
@@ -187,6 +187,16 @@
                 <button id="closeSettingsModalButton" class="close-button" title="Close Settings">&times;</button>
             </div>
             <div class="settings-modal-body">
+                <div class="settings-section">
+                  <h3><i class="fas fa-robot"></i> AI Model</h3>
+                  <label for="modelSelect" style="display:block; margin-bottom: 6px; font-weight: 500; font-size: 14px; color: var(--color-text-secondary);">Select Gemini Model:</label>
+                  <select id="modelSelect" style="width: 100%; padding: 10px; border-radius: 6px; background-color: var(--color-bg-alt); color: var(--color-text); border: 1px solid var(--color-border); font-size: 16px; outline: none; margin-bottom: 8px;">
+                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Default)</option>
+                      <option value="gemini-flash-lite-latest">Gemini 2.5 Flash Lite</option>
+                  </select>
+                  <p class="api-key-info">Gemini 3 Flash is powerful but has lower rate limits. Use Gemini 2.5 Flash Lite for more requests per minute.</p>
+                </div>
+
                 <div class="settings-section api-key-section">
                     <h3><i class="fas fa-key"></i> Gemini API Key</h3>
                     <label for="apiKeyInput">Enter your Gemini API Key:</label>
