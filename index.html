@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>AudioWrite</title>
+    <title>AudioWrite</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -42,7 +42,7 @@
   }
 }
 </script>
-    <script type="module" crossorigin src="/AudioWrite/assets/index-Bf6_UiPs.js"></script>
+    <script type="module" crossorigin src="/AudioWrite/assets/index-DQxnGv9r.js"></script>
     <link rel="stylesheet" crossorigin href="/AudioWrite/assets/index-DDjkoMqw.css">
   <link rel="manifest" href="/AudioWrite/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/AudioWrite/registerSW.js"></script></head>
   <body>
@@ -191,9 +191,11 @@
                   <h3><i class="fas fa-robot"></i> AI Model</h3>
                   <label for="modelSelect" style="display:block; margin-bottom: 6px; font-weight: 500; font-size: 14px; color: var(--color-text-secondary);">Select Gemini Model:</label>
                   <select id="modelSelect" style="width: 100%; padding: 10px; border-radius: 6px; background-color: var(--color-bg-alt); color: var(--color-text); border: 1px solid var(--color-border); font-size: 16px; outline: none; margin-bottom: 8px;">
-                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Default)</option>
-                      <option value="gemini-flash-latest">Gemini 2.5 Flash</option>
-                      <option value="gemini-flash-lite-latest">Gemini 2.5 Flash Lite</option>
+                      <option value="gemini-3.5-transcribe">Gemini 3.5 Transcribe (Default)</option>
+                      <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+                      <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite</option>
+                      <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+                      <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
                   </select>
                   <p class="api-key-info">Gemini 3 Flash is powerful but has lower rate limits. Use Gemini 2.5 Flash or Flash Lite for more requests per minute.</p>
                 </div>
@@ -308,6 +310,6 @@
             });
         }
       });
-    </script>
+    </script>
   </body>
 </html>
