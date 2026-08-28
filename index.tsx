@@ -12,7 +12,7 @@ const LOCAL_STORAGE_MODEL = 'voiceNotesApp_model';
 const SESSION_STORAGE_IOS_A2HS_DISMISSED = 'voiceNotesApp_iosA2HSDismissed';
 const LOCAL_STORAGE_AUTO_POLISH = 'voiceNotesApp_autoPolish';
 
-const DEFAULT_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_MODEL = 'gemini-3.5-transcribe';
 
 // --- IndexedDB Helper Functions ---
 const DB_NAME = 'VoiceNotesDB';
