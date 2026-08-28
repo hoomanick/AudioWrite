@@ -7,10 +7,12 @@
 import {GoogleGenAI, GenerateContentResponse, Type} from '@google/genai';
 import {marked} from 'marked';
 
-const MODEL_NAME = 'gemini-2.5-flash';
 const LOCAL_STORAGE_API_KEY = 'voiceNotesApp_apiKey';
+const LOCAL_STORAGE_MODEL = 'voiceNotesApp_model';
 const SESSION_STORAGE_IOS_A2HS_DISMISSED = 'voiceNotesApp_iosA2HSDismissed';
 const LOCAL_STORAGE_AUTO_POLISH = 'voiceNotesApp_autoPolish';
+
+const DEFAULT_MODEL = 'gemini-3-flash-preview';
 
 // --- IndexedDB Helper Functions ---
 const DB_NAME = 'VoiceNotesDB';
@@ -97,6 +99,7 @@ const DEFAULT_LANGUAGES = [
 class VoiceNotesApp {
   private genAI: GoogleGenAI | null = null;
   private userApiKey: string | null = null;
+  private selectedModel: string = DEFAULT_MODEL;
 
   private mediaRecorder: MediaRecorder | null = null;
   private recordButton: HTMLButtonElement;
@@ -145,6 +148,7 @@ class VoiceNotesApp {
   private apiKeyInput: HTMLInputElement;
   private saveApiKeyButton: HTMLButtonElement;
   private apiKeyStatus: HTMLParagraphElement;
+  private modelSelect: HTMLSelectElement;
 
   private copyPolishedNoteButton: HTMLButtonElement;
   private copyRawTranscriptionButton: HTMLButtonElement;
@@ -204,6 +208,7 @@ class VoiceNotesApp {
     this.apiKeyInput = document.getElementById('apiKeyInput') as HTMLInputElement;
     this.saveApiKeyButton = document.getElementById('saveApiKeyButton') as HTMLButtonElement;
     this.apiKeyStatus = document.getElementById('apiKeyStatus') as HTMLParagraphElement;
+    this.modelSelect = document.getElementById('modelSelect') as HTMLSelectElement;
     
     this.copyPolishedNoteButton = document.getElementById('copyPolishedNoteButton') as HTMLButtonElement;
     this.copyRawTranscriptionButton = document.getElementById('copyRawTranscriptionButton') as HTMLButtonElement;
@@ -230,6 +235,12 @@ class VoiceNotesApp {
     const storedAutoPolish = localStorage.getItem(LOCAL_STORAGE_AUTO_POLISH);
     this.isAutoPolishEnabled = storedAutoPolish === null ? true : storedAutoPolish === 'true';
     this.autoPolishToggle.checked = this.isAutoPolishEnabled;
+
+    const storedModel = localStorage.getItem(LOCAL_STORAGE_MODEL);
+    this.selectedModel = storedModel || DEFAULT_MODEL;
+    if (this.modelSelect) {
+        this.modelSelect.value = this.selectedModel;
+    }
     
     this.initializeNotes();
   }
@@ -398,6 +409,7 @@ class VoiceNotesApp {
         }
     });
     this.saveApiKeyButton.addEventListener('click', () => this.setApiKey());
+    this.modelSelect.addEventListener('change', () => this.handleModelChange());
 
     this.rawTranscriptionDiv.addEventListener('blur', () => this.handleContentEditableChange('rawTranscription'));
     this.polishedNoteDiv.addEventListener('blur', () => this.handleContentEditableChange('polishedNote'));
@@ -500,6 +512,11 @@ class VoiceNotesApp {
   private handleAutoPolishToggle(): void {
     this.isAutoPolishEnabled = this.autoPolishToggle.checked;
     localStorage.setItem(LOCAL_STORAGE_AUTO_POLISH, String(this.isAutoPolishEnabled));
+  }
+  
+  private handleModelChange(): void {
+    this.selectedModel = this.modelSelect.value;
+    localStorage.setItem(LOCAL_STORAGE_MODEL, this.selectedModel);
   }
 
   private toggleCustomPromptDisplay(): void {
@@ -1104,7 +1121,7 @@ class VoiceNotesApp {
         {inlineData: {mimeType: mimeType, data: base64Audio}},
       ];
 
-      const generateContentFn = () => this.genAI!.models.generateContent({ model: MODEL_NAME, contents: contents });
+      const generateContentFn = () => this.genAI!.models.generateContent({ model: this.selectedModel, contents: contents });
 
       const onRetryCallback = (attempt: number, error: any) => {
           console.warn(`Transcription attempt ${attempt} failed. Retrying...`, error);
@@ -1266,7 +1283,7 @@ ${noteToPolish.rawTranscription}`;
       const contents = [{text: promptText}];
       
       const generateContentFn = () => this.genAI!.models.generateContent({ 
-          model: MODEL_NAME, 
+          model: this.selectedModel, 
           contents: contents,
           config: {
             responseMimeType: 'application/json',
@@ -1394,6 +1411,12 @@ ${noteToPolish.rawTranscription}`;
     } else if (this.installAppSection) {
         this.installAppSection.classList.add('hidden');
     }
+    
+    // Ensure dropdown matches current selected model
+    if (this.modelSelect) {
+        this.modelSelect.value = this.selectedModel;
+    }
+
     this.settingsModal.classList.remove('hidden');
   }
 
